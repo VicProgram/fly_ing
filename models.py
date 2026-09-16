@@ -230,11 +230,11 @@ class Solver:
                 if step_cost >= 999999:
                     continue
 
-            if new_cost < min_cost.get(neightbor_hub.name, 999999):
-                min_cost[neightbor_hub.name] = new_cost
-                new_path = list(path) + [neightbor_hub]
-                queue.append((new_cost, neightbor_hub.name, new_path))
+                if new_cost < min_cost.get(neightbor_hub.name, 999999):
+                    min_cost[neightbor_hub.name] = new_cost
+                    new_path = list(path) + [neightbor_hub]
+                    queue.append((new_cost, neightbor_hub.name, new_path))
 
-            print(queue)
+          # print([hub.name for hub in path])
 
         return None

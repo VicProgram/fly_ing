@@ -20,8 +20,11 @@ def main() -> None:
     solver.run()
 
     camino = solver.find_path(solver.map.start_hub, solver.map.end_hub)
-    print(hub.name for hub in camino)
 
+    if camino is not None:
+        print([hub.name for hub in camino])
+    else:
+        print("No hay camino disponible")
 
 if __name__ == "__main__":
     main()
