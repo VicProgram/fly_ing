@@ -4,63 +4,66 @@ MYPY_FLAGS  = --warn-return-any \
               --disallow-untyped-defs \
               --check-untyped-defs
 
-FLAKE8_EXCLUDE = --exclude=venv
-MYPY_EXCLUDE   = --exclude venv
+VENV        := venv
+PYTHON      := $(VENV)/bin/python
+PIP         := $(VENV)/bin/pip
+SCRIPT      = fly_ing.py
 
-SCRIPT = fly_ing.py
+FLAKE8_EXCLUDE = --exclude=$(VENV)
+MYPY_EXCLUDE   = --exclude $(VENV)
 
-all:	install run
+all: install
 
-install:
-	pip install -r requirements.txt
+$(VENV)/bin/python:
+	python3 -m venv $(VENV)
+	$(PIP) install -r requirements.txt
 
-run:
-	python3 $(SCRIPT)
+install: $(VENV)/bin/python
+	@echo "Entorno $(VENV) listo. Dependencias instaladas."
+
+# run: $(VENV)/bin/python
+# 	$(PYTHON) $(SCRIPT) $(MAP)
 
 
-debug:
-	python3 -m pdb $(SCRIPT)
+debug: $(VENV)/bin/python
+	$(PYTHON) -m pdb $(SCRIPT) $(MAP)
 
 
-lint:
+lint: $(VENV)/bin/python
 	@echo "Comprobando linter..."
 	@status=0; \
 	echo ""; \
 	echo "========== FLAKE8 =========="; \
-	uv run flake8 . $(FLAKE8_EXCLUDE) || status=1; \
+	$(VENV)/bin/flake8 . $(FLAKE8_EXCLUDE) || status=1; \
 	echo ""; \
 	echo "=========== MYPY ===========" ; \
-	uv run mypy . $(MYPY_FLAGS) $(MYPY_EXCLUDE) || status=1; \
+	$(VENV)/bin/mypy . $(MYPY_FLAGS) $(MYPY_EXCLUDE) || status=1; \
 	echo ""; \
 	exit $$status
 
-lint-strict:
+lint-strict: $(VENV)/bin/python
 	@echo "Comprobando linter (estricto)..."
 	@status=0; \
 	echo ""; \
 	echo "========== FLAKE8 =========="; \
-	uv run flake8 . $(FLAKE8_EXCLUDE) || status=1; \
+	$(VENV)/bin/flake8 . $(FLAKE8_EXCLUDE) || status=1; \
 	echo ""; \
 	echo "=========== MYPY ===========" ; \
-	uv run mypy . --strict $(MYPY_EXCLUDE) || status=1; \
+	$(VENV)/bin/mypy . --strict $(MYPY_EXCLUDE) || status=1; \
 	echo ""; \
 	exit $$status
 
 
 clean:
-	@echo "Cleaning temporary files...\n"
-
+	@echo "Cleaning temporary files..."
+	rm -rf $(VENV)
+	rm -rf .mypy_cache .pytest_cache .ruff_cache
 	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 	find . -name "*.pyc" -delete
 	find . -name "*.pyo" -delete
-
-	rm -rf .mypy_cache
-
-	@echo "\nRemoving virtual environment...\n"
-	rm -rf .mypy_cache .pytest_cache .ruff_cache
-	rm -rf $(VENV)
+	@echo "Done."
 
 
 re: clean all
 
-.PHONY: all venv install run debug lint lint-strict clean re
+.PHONY: all install debug lint lint-strict clean re
