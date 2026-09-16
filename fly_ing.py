@@ -1,5 +1,5 @@
 from parsing import Parser
-from models22 import Solver, Drone_Map
+from models import Solver, Drone_Map
 import sys
 
 
@@ -22,7 +22,7 @@ def main() -> None:
     camino = solver.find_path(solver.map.start_hub, solver.map.end_hub)
 
     if camino is not None:
-        print([hub.name for hub in camino])
+        print([hub.name for hub, turn in camino])
     else:
         print("No hay camino disponible")
 

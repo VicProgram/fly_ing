@@ -160,6 +160,29 @@ class Solver:
             for i in range(1, drones_number + 1)
         ]
 
+    def print_simulation_output(self, total_paths: list[tuple[Drone, list[tuple[Hub, int]]]]) -> None:
+        """Imprime la simulación turno a turno con la sintaxis del subject (D1-nodo D2-nodo)."""
+        # Agrupar todos los movimientos por número de turno
+        moves_by_turn: dict[int, list[str]] = {}
+
+        for drone, path in total_paths:
+            for i in range(1, len(path)):
+                hub, turn = path[i]
+                prev_hub, _ = path[i - 1]
+
+                # Imprimir el movimiento solo si se desplazó a un nuevo nodo
+                if hub.name != prev_hub.name:
+                    if turn not in moves_by_turn:
+                        moves_by_turn[turn] = []
+                    moves_by_turn[turn].append(f"{drone.id}-{hub.name}")
+
+        # Imprimir en consola en orden cronológico
+        for turn in sorted(moves_by_turn.keys()):
+            print(" ".join(moves_by_turn[turn]))
+
+
+            #TEMPORAL!!!
+
     def get_drones_in_hub(self, hub: Hub) -> int:
         return sum(1 for d in self.drones if d.location == hub)
 
@@ -220,6 +243,7 @@ class Solver:
                 self.add_path(path)
                 total_paths.append((drone, path))
                 print(f"Ruta {drone.id}: {[f'{h.name}(t={t})' for h, t in path]}")
+                self.print_simulation_output(total_paths)
 
     # def find_path(self, start: Hub, end: Hub, start_turn: int = 0) -> Optional[list[Hub]]:
 

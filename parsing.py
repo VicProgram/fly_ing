@@ -2,7 +2,7 @@ import re
 import sys
 from typing import Any, Tuple
 
-from models22 import Connection, Drone_Map, Hub, Valid_List
+from models import Connection, Drone_Map, Hub, Valid_List
 
 
 class Parser:
