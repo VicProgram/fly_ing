@@ -8,7 +8,7 @@ class Valid_List:
     valid_zones = {"normal", "blocked", "restricted", "priority"}
 
     zone_costs = {
-        "priority": 1, "normal": 2, "restricted": 5, "blocked": 999999
+        "priority": 1, "normal": 1, "restricted": 2, "blocked": 999999
                   }
 
     valid_colors = {
@@ -172,27 +172,54 @@ class Solver:
     def can_move_conn(self, conn: Connection) -> bool:
         return self.get_drones_in_con(conn) < conn.capacity
 
+    # def get_move_costs(
+    #         self, from_hub: Hub, to_hub: Hub, conn: Connection
+    #         ) -> int:
+
+    #     if to_hub.zo_type == "blocked" or not self.can_move_hub(to_hub):
+    #         return 999999
+    #     if not self.can_move_conn(conn):
+    #         return 999999
+
+    #     base_cost = 1
+    #     zone_cost = Valid_List.zone_costs.get(to_hub.zo_type, 2)
+
+    #     return base_cost + zone_cost
+
     def get_move_costs(
             self, from_hub: Hub, to_hub: Hub, conn: Connection
             ) -> int:
-
-        if to_hub.zo_type == "blocked" or not self.can_move_hub(to_hub):
+        if to_hub.zo_type == "blocked":
             return 999999
-        if not self.can_move_conn(conn):
-            return 999999
+        return Valid_List.zone_costs.get(to_hub.zo_type, 1)
 
-        base_cost = 1
-        zone_cost = Valid_List.zone_costs.get(to_hub.zo_type, 2)
+    # def run(self) -> None:
+    #     print(f"\n--- Iniciando simulación con {len(self.drones)} drones ---")
+    #     self._reservaion_table.clear()
+    #     total_paths = []
 
-        return base_cost + zone_cost
+    #     for drones in self.drones:
+    #         path = self.find_path(self.map.start_hub, self.map.end_hub)
 
+    #         if path:
+    #             self.add_path(path)
+    #             total_paths.append((drones, path))
+                
+    #     print(
+    #         f"Drones en start_hub ({self.map.start_hub.name}):"
+    #         f"{self.get_drones_in_hub(self.map.start_hub)}"
+    #         )
     def run(self) -> None:
         print(f"\n--- Iniciando simulación con {len(self.drones)} drones ---")
         self._reservaion_table.clear()
-        print(
-            f"Drones en start_hub ({self.map.start_hub.name}):"
-            f"{self.get_drones_in_hub(self.map.start_hub)}"
-            )
+        total_paths = []
+
+        for drone in self.drones:
+            path = self.find_path(self.map.start_hub, self.map.end_hub)
+            if path:
+                self.add_path(path)
+                total_paths.append((drone, path))
+                print(f"Ruta {drone.id}: {[f'{h.name}(t={t})' for h, t in path]}")
 
     # def find_path(self, start: Hub, end: Hub, start_turn: int = 0) -> Optional[list[Hub]]:
 
@@ -230,14 +257,13 @@ class Solver:
     #     return None
 
     def find_path(self, start: Hub, end: Hub, start_turn: int = 0) -> Optional[list[tuple[Hub, int]]]:
-
         queue: list[tuple[int, int, Hub, list[tuple[Hub, int]]]] = [
             (0, start_turn, start, [(start, start_turn)])
         ]
         min_cost: dict[tuple[str, int], int] = {(start.name, start_turn): 0}
 
         while queue:
-            queue.sort(key=lambda x: x[0])  # Ordena por menor costo acumulado
+            queue.sort(key=lambda x: x[0])
             curr_cost, curr_turn, curr_hub, path = queue.pop(0)
 
             if curr_hub.name == end.name:
@@ -247,14 +273,14 @@ class Solver:
                 continue
 
             for neightbor_hub, connection in self.map.get_neightbors(curr_hub):
-                step_cost = self.get_move_cost(neightbor_hub)
+                step_cost = self.get_move_costs(curr_hub, neightbor_hub, connection)
                 if step_cost >= 999999:
                     continue
 
                 next_turn = curr_turn + step_cost
 
-                link_ok = self._reservation_table.link_available(connection, curr_turn)
-                hub_ok = self._reservation_table.hub_available(neightbor_hub, next_turn)
+                link_ok = self._reservaion_table.link_available(connection, curr_turn)
+                hub_ok = self._reservaion_table.hub_available(neightbor_hub, next_turn)
 
                 if link_ok and hub_ok:
                     new_cost = curr_cost + step_cost
@@ -263,10 +289,9 @@ class Solver:
                         new_path = list(path) + [(neightbor_hub, next_turn)]
                         queue.append((new_cost, next_turn, neightbor_hub, new_path))
 
-            # Espera un turno en el mismo hub
             if curr_hub.hub_type != "end":
                 next_turn = curr_turn + 1
-                if self._reservation_table.hub_available(curr_hub, next_turn):
+                if self._reservaion_table.hub_available(curr_hub, next_turn):
                     wait_cost = curr_cost + 1
                     if wait_cost < min_cost.get((curr_hub.name, next_turn), 999999):
                         min_cost[(curr_hub.name, next_turn)] = wait_cost
@@ -276,16 +301,24 @@ class Solver:
         return None
 
     def add_path(self, path: list[tuple[Hub, int]]) -> None:
+        """Reserva correctamente el camino en la tabla de espacio-tiempo."""
         for i in range(len(path)):
-            for hub, turn in path:
-                if hub.zo_type not in ("start", "end"):
-                    self._reservaion_table.reserve_hub(hub.name, turn)
-                if i > 0:
-                    prev_hub, prev_turn = path[i - 1]
-
-                    for conn in self.map.connections:
-                        if (conn.zone1.name == prev_hub.name and conn.zone2 == prev_hub.name) or \
-                            (conn.zone2.name == prev_hub.name and conn.zone1.name == hub.name):
+            hub, turn = path[i]
+            
+            # Reservar Hub
+            if hub.hub_type not in ("start", "end"):
+                self._reservaion_table.reserve_hub(hub.name, turn)
+            
+            # Reservar Conexión
+            if i > 0:
+                prev_hub, prev_turn = path[i - 1]
+                for conn in self.map.connections:
+                    is_match = (
+                        (conn.zone1.name == prev_hub.name and conn.zone2.name == hub.name) or
+                        (conn.zone2.name == prev_hub.name and conn.zone1.name == hub.name)
+                    )
+                    if is_match:
+                        for t in range(prev_turn, turn):
                             self._reservaion_table.reserve_link(conn, t)
 
 
@@ -295,8 +328,8 @@ class ReservationTable:
         self._hub_occup: dict[tuple[str, int], int] = {}
         self._link_occup: dict[tuple[frozenset, int], int] = {}
 
-    def hub_available(self, hub: Hub, turn: int, is_special: bool = False) -> bool:
-        if is_special:
+    def hub_available(self, hub: Hub, turn: int) -> bool:
+        if hub.hub_type in ("start", "end"):
             return True
         curr_drones = self._hub_occup.get((hub.name, turn), 0)
         return curr_drones < hub.max_drones
