@@ -1,4 +1,5 @@
 from typing import Dict, List, Optional
+import heapq
 
 
 class Valid_List:
@@ -216,47 +217,57 @@ class Solver:
 
         self.print_simulation_output(total_paths)
 
-    def find_path(self, start: Hub, end: Hub, start_turn: int = 0) -> Optional[list[tuple[Hub, int]]]:
-        queue: list[tuple[int, int, Hub, list[tuple[Hub, int]]]] = [
-            (0, start_turn, start, [(start, start_turn)])
+    def find_path(self, start: Hub, end: Hub, start_turn: int = 0) -> Optional[List[tuple[Hub, int]]]:
+    # Estrcutura en la cola de prioridad:
+    # (coste_total, turno_actual, id(hub_actual), hub_actual, camino_recorrido)
+    # Nota: id(curr_hub) evita errores de comparación entre objetos Hub en heapq.
+        queue: List[tuple[float, int, int, Hub, List[tuple[Hub, int]]]] = [
+            (0.0, start_turn, id(start), start, [(start, start_turn)])
         ]
-        min_cost: dict[tuple[str, int], int] = {(start.name, start_turn): 0}
+        
+        # Registro del menor costo encontrado para un (hub_name, turn)
+        min_cost: Dict[tuple[str, int], float] = {(start.name, start_turn): 0.0}
 
         while queue:
-            queue.sort(key=lambda x: x[0])
-            curr_cost, curr_turn, curr_hub, path = queue.pop(0)
+            curr_cost, curr_turn, _, curr_hub, path = heapq.heappop(queue)
 
+            # Meta alcanzada
             if curr_hub.name == end.name:
                 return path
 
-            if curr_cost > min_cost.get((curr_hub.name, curr_turn), 999999):
+            # Si ya encontramos una ruta más barata para este mismo estado, ignoramos
+            if curr_cost > min_cost.get((curr_hub.name, curr_turn), float('inf')):
                 continue
 
-            for neightbor_hub, connection in self.map.get_neightbors(curr_hub):
-                step_cost = self.get_move_costs(curr_hub, neightbor_hub, connection)
-                if step_cost >= 999999:
+            # 1. OPCIÓN A: Moverse a nodos vecinos (Prioridad máxima)
+            for neighbor_hub, connection in self.map.get_neightbors(curr_hub):
+                step_cost = self.get_move_costs(curr_hub, neighbor_hub, connection)
+                if step_cost >= 999999:  # Nodo bloqueado o inalcanzable
                     continue
 
                 next_turn = curr_turn + step_cost
-
                 link_ok = self._reservaion_table.link_available(connection, curr_turn)
-                hub_ok = self._reservaion_table.hub_available(neightbor_hub, next_turn)
+                hub_ok = self._reservaion_table.hub_available(neighbor_hub, next_turn)
 
                 if link_ok and hub_ok:
                     new_cost = curr_cost + step_cost
-                    if new_cost < min_cost.get((neightbor_hub.name, next_turn), 999999):
-                        min_cost[(neightbor_hub.name, next_turn)] = new_cost
-                        new_path = list(path) + [(neightbor_hub, next_turn)]
-                        queue.append((new_cost, next_turn, neightbor_hub, new_path))
+                    if new_cost < min_cost.get((neighbor_hub.name, next_turn), float('inf')):
+                        min_cost[(neighbor_hub.name, next_turn)] = new_cost
+                        heapq.heappush(
+                            queue, 
+                            (new_cost, next_turn, id(neighbor_hub), neighbor_hub, path + [(neighbor_hub, next_turn)])
+                        )
 
             if curr_hub.hub_type != "end":
                 next_turn = curr_turn + 1
                 if self._reservaion_table.hub_available(curr_hub, next_turn):
-                    wait_cost = curr_cost + 1
-                    if wait_cost < min_cost.get((curr_hub.name, next_turn), 999999):
+                    wait_cost = curr_cost + 1.0001
+                    if wait_cost < min_cost.get((curr_hub.name, next_turn), float('inf')):
                         min_cost[(curr_hub.name, next_turn)] = wait_cost
-                        new_path = list(path) + [(curr_hub, next_turn)]
-                        queue.append((wait_cost, next_turn, curr_hub, new_path))
+                        heapq.heappush(
+                            queue, 
+                            (wait_cost, next_turn, id(curr_hub), curr_hub, path + [(curr_hub, next_turn)])
+                        )
 
         return None
 
@@ -310,3 +321,4 @@ class ReservationTable:
     def clear(self):
         self._hub_occup.clear()
         self._link_occup.clear()
+ 
