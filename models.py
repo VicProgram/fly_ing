@@ -161,8 +161,7 @@ class Solver:
         ]
 
     def print_simulation_output(self, total_paths: list[tuple[Drone, list[tuple[Hub, int]]]]) -> None:
-        """Imprime la simulación turno a turno con la sintaxis del subject (D1-nodo D2-nodo)."""
-        # Agrupar todos los movimientos por número de turno
+        """Imprime la simulación turno a turno con contador explícito."""
         moves_by_turn: dict[int, list[str]] = {}
 
         for drone, path in total_paths:
@@ -170,18 +169,20 @@ class Solver:
                 hub, turn = path[i]
                 prev_hub, _ = path[i - 1]
 
-                # Imprimir el movimiento solo si se desplazó a un nuevo nodo
                 if hub.name != prev_hub.name:
                     if turn not in moves_by_turn:
                         moves_by_turn[turn] = []
                     moves_by_turn[turn].append(f"{drone.id}-{hub.name}")
 
-        # Imprimir en consola en orden cronológico
-        for turn in sorted(moves_by_turn.keys()):
-            print(" ".join(moves_by_turn[turn]))
+        if not moves_by_turn:
+            return
 
-
-            #TEMPORAL!!!
+        max_turn = max(moves_by_turn.keys())
+        for turn in range(1, max_turn + 1):
+            moves = moves_by_turn.get(turn, [])
+            moves_str = " ".join(moves) if moves else "(Sin movimientos)"
+            print(f"Turno {turn:02d}: \n {moves_str}\n")
+        print(f"--- TOTAL TURNOS: {max_turn} ---\n")
 
     def get_drones_in_hub(self, hub: Hub) -> int:
         return sum(1 for d in self.drones if d.location == hub)
@@ -195,20 +196,6 @@ class Solver:
     def can_move_conn(self, conn: Connection) -> bool:
         return self.get_drones_in_con(conn) < conn.capacity
 
-    # def get_move_costs(
-    #         self, from_hub: Hub, to_hub: Hub, conn: Connection
-    #         ) -> int:
-
-    #     if to_hub.zo_type == "blocked" or not self.can_move_hub(to_hub):
-    #         return 999999
-    #     if not self.can_move_conn(conn):
-    #         return 999999
-
-    #     base_cost = 1
-    #     zone_cost = Valid_List.zone_costs.get(to_hub.zo_type, 2)
-
-    #     return base_cost + zone_cost
-
     def get_move_costs(
             self, from_hub: Hub, to_hub: Hub, conn: Connection
             ) -> int:
@@ -216,22 +203,6 @@ class Solver:
             return 999999
         return Valid_List.zone_costs.get(to_hub.zo_type, 1)
 
-    # def run(self) -> None:
-    #     print(f"\n--- Iniciando simulación con {len(self.drones)} drones ---")
-    #     self._reservaion_table.clear()
-    #     total_paths = []
-
-    #     for drones in self.drones:
-    #         path = self.find_path(self.map.start_hub, self.map.end_hub)
-
-    #         if path:
-    #             self.add_path(path)
-    #             total_paths.append((drones, path))
-                
-    #     print(
-    #         f"Drones en start_hub ({self.map.start_hub.name}):"
-    #         f"{self.get_drones_in_hub(self.map.start_hub)}"
-    #         )
     def run(self) -> None:
         print(f"\n--- Iniciando simulación con {len(self.drones)} drones ---")
         self._reservaion_table.clear()
@@ -242,43 +213,8 @@ class Solver:
             if path:
                 self.add_path(path)
                 total_paths.append((drone, path))
-                print(f"Ruta {drone.id}: {[f'{h.name}(t={t})' for h, t in path]}")
-                self.print_simulation_output(total_paths)
 
-    # def find_path(self, start: Hub, end: Hub, start_turn: int = 0) -> Optional[list[Hub]]:
-
-    #     queue: list[tuple[int, int, str, list[Hub]]] = [(0, start_turn, start.name, [start])]
-
-    #     min_cost: dict[tuple[str, int], int] = {(start.name, start_turn): 0}
-
-    #     while queue:
-    #         queue.sort(key=lambda x: x[0]) #ordena por coste mas bajo
-    #         curr_cost, curr_name, path = queue.pop(0)
-    #         curr_hub = self.map.hubs[curr_name]
-
-    #         if curr_name == end.name:
-    #             return path
-
-    #         if curr_cost > min_cost.get(curr_name, 999999):
-    #             continue
-
-    #         for neightbor_hub, connection in self.map.get_neightbors(curr_hub):
-    #             step_cost = self.get_move_costs(
-    #                 curr_hub, neightbor_hub, connection
-    #                 )
-    #             new_cost = curr_cost + step_cost
-
-    #             if step_cost >= 999999:
-    #                 continue
-
-    #             if new_cost < min_cost.get(neightbor_hub.name, 999999):
-    #                 min_cost[neightbor_hub.name] = new_cost
-    #                 new_path = list(path) + [neightbor_hub]
-    #                 queue.append((new_cost, neightbor_hub.name, new_path))
-
-    #             # print([hub.name for hub in path])
-
-    #     return None
+        self.print_simulation_output(total_paths)
 
     def find_path(self, start: Hub, end: Hub, start_turn: int = 0) -> Optional[list[tuple[Hub, int]]]:
         queue: list[tuple[int, int, Hub, list[tuple[Hub, int]]]] = [
@@ -328,11 +264,11 @@ class Solver:
         """Reserva correctamente el camino en la tabla de espacio-tiempo."""
         for i in range(len(path)):
             hub, turn = path[i]
-            
+
             # Reservar Hub
             if hub.hub_type not in ("start", "end"):
                 self._reservaion_table.reserve_hub(hub.name, turn)
-            
+
             # Reservar Conexión
             if i > 0:
                 prev_hub, prev_turn = path[i - 1]
