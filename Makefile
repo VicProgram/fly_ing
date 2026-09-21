@@ -21,8 +21,8 @@ $(VENV)/bin/python:
 install: $(VENV)/bin/python
 	@echo "Entorno $(VENV) listo. Dependencias instaladas."
 
-# run: $(VENV)/bin/python
-# 	$(PYTHON) $(SCRIPT) $(MAP)
+run: $(VENV)/bin/python
+	$(PYTHON) $(SCRIPT) $(MAP)
 
 
 debug: $(VENV)/bin/python
@@ -66,4 +66,4 @@ clean:
 
 re: clean all
 
-.PHONY: all install debug lint lint-strict clean re
+.PHONY: all install debug lint lint-strict clean re run

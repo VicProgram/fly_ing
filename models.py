@@ -1,5 +1,5 @@
 from typing import Dict, List, Optional
-import heapq
+import heapq, sys
 
 
 class Valid_List:
@@ -149,6 +149,36 @@ class Drone_Map:
         return neightbors
 
 
+class ReservationTable:
+
+    def __init__(self) -> None:
+        self._hub_occup: dict[tuple[str, int], int] = {}
+        self._link_occup: dict[tuple[frozenset, int], int] = {}
+
+    def hub_available(self, hub: Hub, turn: int) -> bool:
+        if hub.hub_type in ("start", "end"):
+            return True
+        curr_drones = self._hub_occup.get((hub.name, turn), 0)
+        return curr_drones < hub.max_drones
+
+    def link_available(self, connection: Connection, turn: int) -> bool:
+        key = (connection._key(), turn)
+        curr_drones = self._link_occup.get(key, 0)
+        return curr_drones < connection.capacity
+
+    def reserve_hub(self, hub_name: str, turn: int) -> None:
+        key = (hub_name, turn)
+        self._hub_occup[key] = self._hub_occup.get(key, 0) + 1
+
+    def reserve_link(self, connection: Connection, turn: int) -> None:
+        key = (connection._key(), turn)
+        self._link_occup[key] = self._link_occup.get(key, 0) + 1
+
+    def clear(self):
+        self._hub_occup.clear()
+        self._link_occup.clear()
+
+
 class Solver:
     def __init__(self, drone_map: Drone_Map, drones_number: int) -> None:
         self.map: Drone_Map = drone_map
@@ -206,14 +236,20 @@ class Solver:
 
     def run(self) -> None:
         print(f"\n--- Iniciando simulación con {len(self.drones)} drones ---")
+
         self._reservaion_table.clear()
         total_paths = []
 
         for drone in self.drones:
             path = self.find_path(self.map.start_hub, self.map.end_hub)
+            if path is None:
+                sys.stderr.write("End_hub no alcanzable")
+                sys.exit(1)
             if path:
                 self.add_path(path)
                 total_paths.append((drone, path))
+            else:
+                raise ValueError("\nNo hay un camino disponible\n")
 
         self.print_simulation_output(total_paths)
 
@@ -231,6 +267,8 @@ class Solver:
         while queue:
             curr_cost, curr_turn, _, curr_hub, path = heapq.heappop(queue)
 
+            if curr_cost > 700:
+                continue
             # Meta alcanzada
             if curr_hub.name == end.name:
                 return path
@@ -242,7 +280,7 @@ class Solver:
             # 1. OPCIÓN A: Moverse a nodos vecinos (Prioridad máxima)
             for neighbor_hub, connection in self.map.get_neightbors(curr_hub):
                 step_cost = self.get_move_costs(curr_hub, neighbor_hub, connection)
-                if step_cost >= 999999:  # Nodo bloqueado o inalcanzable
+                if step_cost >= 999999:  # Nodo bloqueado
                     continue
 
                 next_turn = curr_turn + step_cost
@@ -291,34 +329,3 @@ class Solver:
                     if is_match:
                         for t in range(prev_turn, turn):
                             self._reservaion_table.reserve_link(conn, t)
-
-
-class ReservationTable:
-
-    def __init__(self) -> None:
-        self._hub_occup: dict[tuple[str, int], int] = {}
-        self._link_occup: dict[tuple[frozenset, int], int] = {}
-
-    def hub_available(self, hub: Hub, turn: int) -> bool:
-        if hub.hub_type in ("start", "end"):
-            return True
-        curr_drones = self._hub_occup.get((hub.name, turn), 0)
-        return curr_drones < hub.max_drones
-
-    def link_available(self, connection: Connection, turn: int) -> bool:
-        key = (connection._key(), turn)
-        curr_drones = self._link_occup.get(key, 0)
-        return curr_drones < connection.capacity
-
-    def reserve_hub(self, hub_name: str, turn: int) -> None:
-        key = (hub_name, turn)
-        self._hub_occup[key] = self._hub_occup.get(key, 0) + 1
-
-    def reserve_link(self, connection: Connection, turn: int) -> None:
-        key = (connection._key(), turn)
-        self._link_occup[key] = self._link_occup.get(key, 0) + 1
-
-    def clear(self):
-        self._hub_occup.clear()
-        self._link_occup.clear()
- 
