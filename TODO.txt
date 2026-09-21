@@ -88,7 +88,7 @@ PENDIENTE
 
 === FASE 1 — Pathfinding (models.py: find_path / add_path) ===
 
-- [ ] 4. [!] [BLOQUEANTE] Bucle infinito si el end no es alcanzable.
+- [OK] 4. [!] [BLOQUEANTE] Bucle infinito si el end no es alcanzable.
       models.py:261-270 permite esperar sin límite, así que la búsqueda
       nunca se agota. Reproducir (mapa sin ninguna conexión):
           nb_drones: 1

@@ -191,30 +191,6 @@ class Solver:
             for i in range(1, drones_number + 1)
         ]
 
-    def print_simulation_output(self, total_paths: list[tuple[Drone, list[tuple[Hub, int]]]]) -> None:
-        """Imprime la simulación turno a turno con contador explícito."""
-        moves_by_turn: dict[int, list[str]] = {}
-
-        for drone, path in total_paths:
-            for i in range(1, len(path)):
-                hub, turn = path[i]
-                prev_hub, _ = path[i - 1]
-
-                if hub.name != prev_hub.name:
-                    if turn not in moves_by_turn:
-                        moves_by_turn[turn] = []
-                    moves_by_turn[turn].append(f"{drone.id}-{hub.name}")
-
-        if not moves_by_turn:
-            return
-
-        max_turn = max(moves_by_turn.keys())
-        for turn in range(1, max_turn + 1):
-            moves = moves_by_turn.get(turn, [])
-            moves_str = " ".join(moves) if moves else "(Sin movimientos)"
-            print(f"Turno {turn:02d}: \n {moves_str}\n")
-        print(f"--- TOTAL TURNOS: {max_turn} ---\n")
-
     def get_drones_in_hub(self, hub: Hub) -> int:
         return sum(1 for d in self.drones if d.location == hub)
 
@@ -242,26 +218,25 @@ class Solver:
 
         for drone in self.drones:
             path = self.find_path(self.map.start_hub, self.map.end_hub)
-            if path is None:
+
+            if not path:
                 sys.stderr.write("End_hub no alcanzable")
                 sys.exit(1)
-            if path:
-                self.add_path(path)
-                total_paths.append((drone, path))
-            else:
-                raise ValueError("\nNo hay un camino disponible\n")
+
+            self.add_path(path)
+            total_paths.append((drone, path))
 
         self.print_simulation_output(total_paths)
 
     def find_path(self, start: Hub, end: Hub, start_turn: int = 0) -> Optional[List[tuple[Hub, int]]]:
-    # Estrcutura en la cola de prioridad:
-    # (coste_total, turno_actual, id(hub_actual), hub_actual, camino_recorrido)
-    # Nota: id(curr_hub) evita errores de comparación entre objetos Hub en heapq.
+        # Estrcutura en la cola de prioridad:
+        # (coste_total, turno_actual, id(hub_actual), hub_actual, camino_recorrido)
+        # Nota: id(curr_hub) evita errores de comparación entre objetos Hub en heapq.
         queue: List[tuple[float, int, int, Hub, List[tuple[Hub, int]]]] = [
             (0.0, start_turn, id(start), start, [(start, start_turn)])
         ]
         
-        # Registro del menor costo encontrado para un (hub_name, turn)
+        # Menor coste encontrado para un (hub_name, turn)
         min_cost: Dict[tuple[str, int], float] = {(start.name, start_turn): 0.0}
 
         while queue:
@@ -269,11 +244,12 @@ class Solver:
 
             if curr_cost > 700:
                 continue
+
             # Meta alcanzada
             if curr_hub.name == end.name:
                 return path
 
-            # Si ya encontramos una ruta más barata para este mismo estado, ignoramos
+            # Si ya encontramos una ruta más barata , ignoramos
             if curr_cost > min_cost.get((curr_hub.name, curr_turn), float('inf')):
                 continue
 
@@ -284,7 +260,11 @@ class Solver:
                     continue
 
                 next_turn = curr_turn + step_cost
-                link_ok = self._reservaion_table.link_available(connection, curr_turn)
+                link_ok = all(
+                    self._reservaion_table.link_available(connection, curr_turn) \
+                    for t in range(curr_turn, next_turn)
+                    )
+
                 hub_ok = self._reservaion_table.hub_available(neighbor_hub, next_turn)
 
                 if link_ok and hub_ok:
@@ -293,7 +273,8 @@ class Solver:
                         min_cost[(neighbor_hub.name, next_turn)] = new_cost
                         heapq.heappush(
                             queue, 
-                            (new_cost, next_turn, id(neighbor_hub), neighbor_hub, path + [(neighbor_hub, next_turn)])
+                            (new_cost, next_turn, id(neighbor_hub),
+                            neighbor_hub, path + [(neighbor_hub, next_turn)])
                         )
 
             if curr_hub.hub_type != "end":
@@ -329,3 +310,27 @@ class Solver:
                     if is_match:
                         for t in range(prev_turn, turn):
                             self._reservaion_table.reserve_link(conn, t)
+
+    def print_simulation_output(self, total_paths: list[tuple[Drone,list[tuple[Hub, int]]]]) -> None:
+        # Imprime la simulación turno a turno con contador explícito
+        moves_by_turn: dict[int, list[str]] = {}
+
+        for drone, path in total_paths:
+            for i in range(1, len(path)):
+                hub, turn = path[i]
+                prev_hub, _ = path[i - 1]
+
+                if hub.name != prev_hub.name:
+                    if turn not in moves_by_turn:
+                        moves_by_turn[turn] = []
+                    moves_by_turn[turn].append(f"{drone.id}-{hub.name}")
+
+        if not moves_by_turn:
+            return
+
+        max_turn = max(moves_by_turn.keys())
+        for turn in range(1, max_turn + 1):
+            moves = moves_by_turn.get(turn, [])
+            moves_str = " ".join(moves) if moves else "(Sin movimientos)"
+            print(f"Turno {turn:02d}: \n {moves_str}\n")
+        print(f"--- TOTAL TURNOS: {max_turn} ---\n")
