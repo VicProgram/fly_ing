@@ -1,5 +1,14 @@
-venv
-.mypy_cache
-__pycache/
-maps.tar.gz
+# Entorno virtual
+.venv/
 
+# Python
+__pycache__/
+*.py[cod]
+
+# Cachés de herramientas
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# Sueltos
+maps.tar.gz

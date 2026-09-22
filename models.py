@@ -1,5 +1,6 @@
 from typing import Dict, List, Optional
-import heapq, sys
+import heapq
+import sys
 
 
 class Valid_List:
@@ -111,10 +112,15 @@ class Drone_Map:
 
     def add_hub(self, hub: Hub) -> None:
         if hub.name in self.hubs:
-            raise ValueError(f"Error: El Hub con nombre '{hub.name}' ya existe.")
+            raise ValueError(
+                f"Error: El Hub con nombre '{hub.name}' ya existe."
+            )
 
         if (hub.x, hub.y) in self.used_coords:
-            raise ValueError(f"Error: ya existe un hub en la coordenada ({hub.x}, {hub.y}).")
+            raise ValueError(
+                f"Error: ya existe un hub en la coordenada "
+                f"({hub.x}, {hub.y})."
+            )
 
         if hub.hub_type == "start" and self.start_hub is not None:
             raise ValueError("Error: ya existe un start_hub.")
@@ -134,7 +140,9 @@ class Drone_Map:
         if connection not in self.connections:
             self.connections.append(connection)
         else:
-            raise ValueError(f"Error: La conexion '{connection.name}' ya existe")
+            raise ValueError(
+                f"Error: La conexion '{connection.name}' ya existe"
+            )
 
     def get_neightbors(self, hub: Hub) -> list[tuple[Hub, Connection]]:
 
@@ -228,16 +236,24 @@ class Solver:
 
         self.print_simulation_output(total_paths)
 
-    def find_path(self, start: Hub, end: Hub, start_turn: int = 0) -> Optional[List[tuple[Hub, int]]]:
+    def find_path(
+        self,
+        start: Hub,
+        end: Hub,
+        start_turn: int = 0,
+    ) -> Optional[List[tuple[Hub, int]]]:
         # Estrcutura en la cola de prioridad:
-        # (coste_total, turno_actual, id(hub_actual), hub_actual, camino_recorrido)
-        # Nota: id(curr_hub) evita errores de comparación entre objetos Hub en heapq.
+        # (coste_total, turno_actual, id(hub_actual), hub_actual,
+        #  camino_recorrido)
+
         queue: List[tuple[float, int, int, Hub, List[tuple[Hub, int]]]] = [
             (0.0, start_turn, id(start), start, [(start, start_turn)])
         ]
-        
+
         # Menor coste encontrado para un (hub_name, turn)
-        min_cost: Dict[tuple[str, int], float] = {(start.name, start_turn): 0.0}
+        min_cost: Dict[tuple[str, int], float] = {
+            (start.name, start_turn): 0.0
+        }
 
         while queue:
             curr_cost, curr_turn, _, curr_hub, path = heapq.heappop(queue)
@@ -250,42 +266,64 @@ class Solver:
                 return path
 
             # Si ya encontramos una ruta más barata , ignoramos
-            if curr_cost > min_cost.get((curr_hub.name, curr_turn), float('inf')):
+            prev_cost = min_cost.get((curr_hub.name, curr_turn), float('inf'))
+            if curr_cost > prev_cost:
                 continue
 
             # 1. OPCIÓN A: Moverse a nodos vecinos (Prioridad máxima)
             for neighbor_hub, connection in self.map.get_neightbors(curr_hub):
-                step_cost = self.get_move_costs(curr_hub, neighbor_hub, connection)
+                step_cost = self.get_move_costs(
+                    curr_hub, neighbor_hub, connection
+                )
                 if step_cost >= 999999:  # Nodo bloqueado
                     continue
 
                 next_turn = curr_turn + step_cost
                 link_ok = all(
-                    self._reservaion_table.link_available(connection, curr_turn) \
-                    for t in range(curr_turn, next_turn)
+                    self._reservaion_table.link_available(
+                        connection, curr_turn
                     )
+                    for t in range(curr_turn, next_turn)
+                )
 
-                hub_ok = self._reservaion_table.hub_available(neighbor_hub, next_turn)
+                hub_ok = self._reservaion_table.hub_available(
+                    neighbor_hub, next_turn
+                )
 
                 if link_ok and hub_ok:
                     new_cost = curr_cost + step_cost
-                    if new_cost < min_cost.get((neighbor_hub.name, next_turn), float('inf')):
-                        min_cost[(neighbor_hub.name, next_turn)] = new_cost
+                    key = (neighbor_hub.name, next_turn)
+                    best = min_cost.get(key, float('inf'))
+                    if new_cost < best:
+                        min_cost[key] = new_cost
                         heapq.heappush(
-                            queue, 
-                            (new_cost, next_turn, id(neighbor_hub),
-                            neighbor_hub, path + [(neighbor_hub, next_turn)])
+                            queue,
+                            (
+                                new_cost,
+                                next_turn,
+                                id(neighbor_hub),
+                                neighbor_hub,
+                                path + [(neighbor_hub, next_turn)],
+                            ),
                         )
 
             if curr_hub.hub_type != "end":
                 next_turn = curr_turn + 1
                 if self._reservaion_table.hub_available(curr_hub, next_turn):
                     wait_cost = curr_cost + 1.0001
-                    if wait_cost < min_cost.get((curr_hub.name, next_turn), float('inf')):
-                        min_cost[(curr_hub.name, next_turn)] = wait_cost
+                    wait_key = (curr_hub.name, next_turn)
+                    best = min_cost.get(wait_key, float('inf'))
+                    if wait_cost < best:
+                        min_cost[wait_key] = wait_cost
                         heapq.heappush(
-                            queue, 
-                            (wait_cost, next_turn, id(curr_hub), curr_hub, path + [(curr_hub, next_turn)])
+                            queue,
+                            (
+                                wait_cost,
+                                next_turn,
+                                id(curr_hub),
+                                curr_hub,
+                                path + [(curr_hub, next_turn)],
+                            ),
                         )
 
         return None
@@ -304,14 +342,23 @@ class Solver:
                 prev_hub, prev_turn = path[i - 1]
                 for conn in self.map.connections:
                     is_match = (
-                        (conn.zone1.name == prev_hub.name and conn.zone2.name == hub.name) or
-                        (conn.zone2.name == prev_hub.name and conn.zone1.name == hub.name)
+                        (
+                            conn.zone1.name == prev_hub.name
+                            and conn.zone2.name == hub.name
+                        )
+                        or (
+                            conn.zone2.name == prev_hub.name
+                            and conn.zone1.name == hub.name
+                        )
                     )
                     if is_match:
                         for t in range(prev_turn, turn):
                             self._reservaion_table.reserve_link(conn, t)
 
-    def print_simulation_output(self, total_paths: list[tuple[Drone,list[tuple[Hub, int]]]]) -> None:
+    def print_simulation_output(
+        self,
+        total_paths: list[tuple[Drone, list[tuple[Hub, int]]]],
+    ) -> None:
         # Imprime la simulación turno a turno con contador explícito
         moves_by_turn: dict[int, list[str]] = {}
 

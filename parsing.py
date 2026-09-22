@@ -54,7 +54,9 @@ class Parser:
         )
 
         match_zone = re.search(r"zone=(\w+)", content)
-        zo_type = match_zone.group(1).lower().strip() if match_zone else "normal"
+        zo_type = (
+            match_zone.group(1).lower().strip() if match_zone else "normal"
+        )
         Valid_List.check_zone(zo_type)
 
         match_max_drone_nb = re.search(r"max_drones=(\d+)", content)
@@ -137,7 +139,9 @@ class Parser:
                 _, content = line_stripped.split(":", 1)
 
                 match_capacity = re.search(r"max_link_capacity=(\d+)", content)
-                capacity = int(match_capacity.group(1)) if match_capacity else 1
+                capacity = (
+                    int(match_capacity.group(1)) if match_capacity else 1
+                )
 
                 if capacity <= 0:
                     raise ValueError(

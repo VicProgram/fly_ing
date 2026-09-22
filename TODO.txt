@@ -1,13 +1,7 @@
 TODO — Fly-in
-Revisión completa contra el subject v1.4 (21/09/2026)
-+ re-verificación del 22/09/2026 (código leído entero, 10 mapas oficiales
-  ejecutados, pruebas puntuales de parser/formato/determinismo/capacidad).
-Método previo: código leído entero, 10 mapas oficiales ejecutados, ~30 mapas rotos
-a mano, 340 mapas aleatorios y un validador independiente de la salida
-(ocupación de hubs, capacidad de conexiones, conectividad, blocked, 2 turnos
-de restricted). El código NO se ha modificado.
 
 Leyenda:  [OK] hecho y verificado   [ ] pendiente   [!] fallo encontrado [?] comprobación pendiente
+
 Prioridad: BLOQUEANTE (incumple el subject / crash / resultado inválido)
            IMPORTANTE (riesgo claro en evaluación)   MENOR / OPCIONAL
 
@@ -21,11 +15,16 @@ RESUMEN
   sobre una ReservationTable). NO hay bucle de simulación turno a turno,
   así que las fases antiguas de "motor de simulación" ya no aplican tal cual.
 - ARREGLADO desde la revisión anterior: el cuelgue con mapa sin camino
-  (punto 4) ya no ocurre; la determinismo (punto 6) no se reproduce.
-- Bloqueantes que quedan: formato de salida, visual (visualizer.py tiene
-  SyntaxError y nadie lo llama), README, make install/lint rotos en esta
-  máquina, sobrepasar capacidad de conexión (hard/02), flake8/mypy,
-  docstrings y `make run`.
+  (punto 4); make install/lint (punto 1bis, con python3.14-venv);
+  flake8 a 0 errores (punto 22); SyntaxError de visualizer.py (34).
+- LO QUE QUEDA EN CALIDAD DE CÓDIGO (para ti, cuando puedas):
+  mypy 6 errores (23), docstrings (24), README (27), y el resto de la
+  FASE 0/2/3 (formato de salida, parser).
+  ARREGLADO también: `make run MAP=...` (punto 1) y el entorno virtual /
+  .gitignore (punto 3) -> ahora todo corre sobre `.venv`, único entorno.
+- Bloqueantes funcionales que quedan: formato de salida (10-11),
+  visual (20, falta integrarlo), capacidad de conexión en hard/02 (5),
+  parser (12-16), README (27).
 
 ===========================================================================
 HECHO Y VERIFICADO
@@ -77,34 +76,46 @@ PENDIENTE
 
 === FASE 0 — Arreglos rápidos que desbloquean `make` ===
 
-- [!] 1. [BLOQUEANTE] Makefile: `run` y `debug` usan `$(MAP)` sin definirlo
-      (Makefile:25, 29) -> `make run` ejecuta `fly_ing.py` sin argumentos y
-      acaba en el usage con Error 1 (verificado 22/09).
-      Rehacer: `MAP ?= maps/easy/01_linear_path.txt` y añadir `run` a
-      .PHONY (ya está, comprobar tras el cambio).
+- [OK] 1. [BLOQUEANTE] (RESUELTO 22/09) Makefile: `run` y `debug` usaban
+      `$(MAP)` sin definirlo y la referencia iba tras un `#`, así que nunca
+      llegaba a la shell -> `make run` acababa en el usage con Error 1.
+      Arreglado: `MAP ?= maps/easy/01_linear_path.txt` (se sobreescribe con
+      `make run MAP=...`) y `$(PYTHON) $(SCRIPT) $(MAP)` en run y debug.
+      Verificado: `make run` (easy/01, 4 turnos), `make run MAP=medium/01`
+      (8 turnos), `make -n debug` correcto. El Makefile viejo queda
+      comentado arriba del actual, como pediste.
+      `run` ya estaba en .PHONY.
 
-- [!] 1bis. [BLOQUEANTE] `make install` FALLA en esta máquina: `python3 -m venv`
-      aborta porque falta `ensurepip` ( Debian/Ubuntu sin python3-venv ), el
-      venv queda sin pip, y `make lint` acaba con "venv/bin/flake8: not found"
-      / "venv/bin/mypy: not found" (verificado 22/09). Sin esto no puedes
-      cumplir "flake8/mypy a cero".
-      Fix: instalar flake8/mypy donde sí estén (p. ej.
-      `pip3 install --user --break-system-packages flake8 mypy`, o apt
-      python3-flake8 python3-mypy) y/o hacer el Makefile tolerante:
-      comprobar que el venv tiene pip antes de instalar y dar un mensaje
-      claro. Verificar: `make lint` corre de verdad.
+- [OK] 1bis. [BLOQUEANTE] (RESUELTO 22/09) `make install` FALLABA: faltaba
+      `ensurepip` (paquete `python3.14-venv` no instalado), el venv quedaba
+      sin pip y `make lint` daba "venv/bin/flake8: not found".
+      Ya instalado con `sudo apt install python3.14-venv`; el venv se
+      recreó con pip, flake8 7.3.0 y mypy dentro. `make lint` corre de verdad.
+      (Pendiente solo si se monta en otra máquina: repetir ese apt o dejar
+      un mensaje claro en el Makefile.)
 
 - [OK] 2. [BLOQUEANTE] Borrar `__init__.py` de la raíz. Con él, `mypy .`
       aborta con "Source file found twice under different module names"
       y `make lint` falla sin analizar nada (el proyecto usa imports
       absolutos `from models import ...`, no es un paquete).
 
-- [!] 3. [IMPORTANTE] .gitignore SIGUE MAL (verificado 22/09): contiene
-      `__pycache/` (typo, falta un guion bajo), no tiene `*.pyc`, y
-      `git ls-files | grep pyc` devuelve 6 ficheros commiteados
-      (__pycache__/{fly_ing,models,parsing}.cpython-{310,312}.pyc).
-      Fix: `__pycache__/` + `*.pyc` + `.mypy_cache/` + `.pytest_cache/` +
-      `venv/`, y `git rm -r --cached __pycache__`.
+- [OK] 3. [IMPORTANTE] (RESUELTO 22/09 tarde) .gitignore reescrito:
+      `__pycache__/` (typo corregido), `*.py[cod]`, `.mypy_cache/`,
+      `.pytest_cache/`, `.ruff_cache/`, `.venv/` y `maps.tar.gz`.
+      `git rm -r --cached __pycache__` ejecutado: `git ls-files | grep
+      pycache` -> 0 (los .pyc siguen en disco pero ya ignorados).
+      Además: UN SOLO entorno virtual, `.venv` (antes había `.venv` Y
+      `venv`, y `venv` se había creado a partir del python de `.venv`).
+      `VENV := .venv` en el Makefile, flake8 7.3.0 + mypy 2.3.1
+      instalados en `.venv`, `venv/` borrado, excludes del lint simplificados
+      a `--exclude=$(VENV)`. Verificado: `make run` y `make lint` corren
+      sobre `.venv`, `make -n clean` borra `.venv`.
+
+- [ ] 3bis. [IMPORTANTE] Hay cambios SIN COMMITAR de la sesión del 22/09:
+      `models.py`, `parsing.py`, `visualizer.py` (solo formato + el
+      SyntaxError), `Makefile` (MAP + VENV := .venv), `.gitignore` y el
+      borrado de los 8 `.pyc` (ya staged con `git rm --cached`).
+      Commitearlos cuando quieras (idealmente tras leer el diff).
 
 === FASE 1 — Pathfinding (models.py: find_path / add_path) ===
 
@@ -256,15 +267,12 @@ PENDIENTE
 
 === FASE 4 — Visual (subject VII.1, obligatorio) ===
 
-- [!] 20. [BLOQUEANTE] Valid_List.valid_colors (models.py:15-37) no se usa
-      en ningún print. Existe visualizer.py (tkinter) pero:
-        a) visualizer.py:72 tiene SyntaxError -> `def start((self) -> None:`
-           (el fichero NO compila; verificado 22/09).
-        b) Nadie importa DroneVisualizer (grep: 0 usos fuera del propio
-           fichero); el sujeto exige visual OBLIGATORIO.
-        c) self.drones anotado Dict[str,int] pero se le asignan tuplas
-           (visualizer.py:62,66); tkinter ni está instalado en esta máquina.
-      Riesgo: tkinter puede no existir en la máquina de evaluación.
+- [!] 20. [BLOQUEANTE] (PARCIAL 22/09: el SyntaxError ya está arreglado y
+      visualizer.py compila, pero sigue sin usarse) Valid_List.valid_colors
+      (models.py:15-37) no se usa en ningún print. Nadie importa
+      DroneVisualizer (grep: 0 usos fuera del propio fichero); el subject
+      exige visual OBLIGATORIO. Además tkinter ni está instalado en esta
+      máquina -> riesgo de que tampoco lo esté en la de evaluación.
       Recomendación: visual por terminal (ANSI + mini-mapa ASCII con las
       coordenadas x,y) que conviva con el formato exacto del punto 10
       (flag `--visual` o salida por stderr), y tkinter solo como extra.
@@ -277,29 +285,45 @@ PENDIENTE
 
 === FASE 5 — Calidad de código (subject III.1 y Constraints) ===
 
-- [ ] 22. [BLOQUEANTE] flake8 (no se pudo ejecutar el 22/09: ver punto 1bis;
-      recuento manual de líneas > 79 = 26 errores seguros):
-        models.py E501: 114,117,137,231,233,234,240,253,258,264,268,272,
-                        284,288,307,308,314
-        parsing.py E501: 57, 140
-        visualizer.py E501: 10,26,49,50,52,60,61  (+ SyntaxError:72, y
-                        E501/W29x en 2,3,4,29)
-        fly_ing.py E305 (dos líneas en blanco antes de `if __name__`)
-        W291/W293 (espacios finales): models.py:238,275,287
-      Sigue en pie el E115 (comentarios de find_path sin indentar) si
-      flake8 lo marca. Meta: 0 errores.
+- [OK] 22. [BLOQUEANTE] (RESUELTO 22/09) flake8 -> 0 ERRORES.
+      Comando: `venv/bin/flake8 --exclude=venv,.venv .` = 0.
+      Lo único que se tocó fue FORMATO (nada de lógica; los 10 mapas dan
+      los mismos turnos que antes: 4,4,4 / 8,15,7 / 13,16,26 / 43):
+        - models.py: import heapq/sys separados (E401); 9 líneas >79
+          partidas (E501); espacios finales quitados (W291/W293);
+          `\` redundante entre corchetes (E502); indentación de
+          continuación (E128); `,` sin espacio (E231). En find_path se
+          extrajeron a variables locales `prev_cost`, `key`/`best`,
+          `wait_key`/`best` SOLO para acortar líneas: misma expresión.
+        - parsing.py: 2 ternarios partidos (E501).
+        - visualizer.py: SyntaxError de la línea 72 arreglado
+          (`def start((self)` -> `def start(self)`, E999) + E302, E501,
+          W291/W293, W292. El fichero YA compila.
+        - Makefile: FLAKE8_EXCLUDE/MYPY_EXCLUDE ahora excluyen también
+          `.venv` (antes solo `venv`, y `.venv` reventaba con +5000
+          errores de pip).
+      OJO: `make lint` todavía NO pasa porque falla mypy -> punto 23.
+      Si toques código, vuelve a correr flake8 antes de commitar.
 
-- [ ] 23. [BLOQUEANTE] mypy (una vez borrado __init__.py): 6 errores con las
-      flags del subject:
-        models.py:160, 213 y fly_ing.py:22: start_hub/end_hub son
-          Optional[Hub] y se pasan donde se pide Hub -> comprobar None
-          (o lanzar error) antes de usarlos.
-        models.py:321: `clear` sin `-> None`.
-      Con --strict (opcional, recomendado): 11. Añade models.py:73 y 300
-      (`frozenset` -> frozenset[str]), 110 (`set` -> set[tuple[int, int]]),
-      156 (`history: list` -> list[str]), 209 (llamada a `clear` sin tipar).
-      Además: `neightbors = []` (models.py:141) y `nuevo_hub: Any = None`
-      (parsing.py:113, quitar el Any) conviene anotarlos.
+- [ ] 23. [BLOQUEANTE] mypy: quedan 6 errores (22/09 tarde, RE-VERIFICADO
+      con `.venv/bin/mypy .` = los 4 ficheros):
+        visualizer.py:83,86  self.drones anotado Dict[str, int] pero se le
+          asigna una tupla (drone_obj, label_obj) -> cambiar la anotación a
+          Dict[str, Tuple[int, int]] (el tipo actual estaba MAL, no es un
+          error de tipado tuyo).
+        models.py:185  clear() SIN `-> None`: el TODO decía esto resuelto
+          pero la línea actual es `def clear(self):` -> OJO, ha vuelto a
+          caer (o nunca se llegó a escribir).
+        models.py:198  Drone(..., self.map.start_hub) -> Optional[Hub].
+        models.py:228  find_path(self.map.start_hub, self.map.end_hub) x2
+          -> lo mismo, dentro de run().
+      El parser ya exige start y end, así que o un
+          `assert self.map.start_hub is not None` o un chequeo con
+          stderr + exit.
+      Con --strict (opcional, recomendado) saldrán más: `frozenset` ->
+      frozenset[str] (models.py:73), `set` -> set[tuple[int,int]] (110),
+      `history: list` -> list[str] (156), `neightbors = []` sin anotar
+      (141), `nuevo_hub: Any` (parsing.py:113, quitar el Any).
       Meta: `make lint` y `make lint-strict` en limpio.
 
 - [ ] 24. [BLOQUEANTE] Docstrings PEP 257 (recontado 22/09 con ast):
@@ -379,13 +403,12 @@ NUEVO 22/09/2026 (cosas que aparecieron en la re-verificación)
 - [!] 33. [BLOQUEANTE] README.md en la raíz NO existe (verificado 22/09;
       solo hay maps/README.md). Es el punto 27, confirmado hoy.
 
-- [!] 34. [BLOQUEANTE] (es el punto 20) visualizer.py no compila
-      (SyntaxError en la línea 72, `def start((self) -> None:`) y nadie lo
-      importa.
+- [!] 34. [PARCIAL] (es el punto 20) visualizer.py: el SyntaxError de la
+      línea 72 YA está arreglado (compila), pero nadie lo importa y falta
+      el visual real.
 
-- [!] 35. [BLOQUEANTE] (es el punto 1bis) `make install` falla (falta
-      ensurepip) y por tanto `make lint` no puede correr flake8/mypy en
-      esta máquina.
+- [OK] 35. (es el punto 1bis, RESUELTO) `make install` ya funciona tras
+      instalar python3.14-venv; `make lint` corre flake8 y mypy.
 
 - [ ] 36. [MENOR] (es el punto 18) fly_ing.py usage: dice
       "python3 -m tu_modulo mapa.txt" (fly_ing.py:8) -> poner
