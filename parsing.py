@@ -25,47 +25,106 @@ class Parser:
                     try:
                         self.parse_line(clean_line, line_num)
                     except Exception as e:
-                        print(
-                            f"Ha ocurrido un error en la línea {line_num}: {e}"
+                        sys.stderr.write(
+                            f"Ha ocurrido un error en la línea {line_num}: {e}\n"
                         )
                         sys.exit(1)
+        except (FileNotFoundError, IsADirectoryError, PermissionError) as e:
+            sys.stderr.write(f"Error al abrir el archivo '{map_path}': {e}\n")
+            sys.exit(1)
+
+        except UnicodeDecodeError:
+            sys.stderr.write(
+                f"Error: El archivo '{map_path}' no es un UTF-8 válido.\n"
+            )
+            sys.exit(1)
+
+        except OSError as e:
+            sys.stderr.write(f"Error de E/S en '{map_path}': {e}\n")
+            sys.exit(1)
 
         except FileNotFoundError:
-            print(
-                f"Error: El archivo '{map_path}' no existe.",
-                file=sys.stderr,
+            sys.stderr.write(
+                f"Error: El archivo '{map_path}' no existe.\n"
             )
             sys.exit(1)
 
         if self.map.start_hub is None:
-            print("Error: el mapa no tiene start_hub.", file=sys.stderr)
+            sys.stderr.write("Error: el mapa no tiene start_hub.")
             sys.exit(1)
 
         if self.map.end_hub is None:
-            print("Error: el mapa no tiene end_hub.", file=sys.stderr)
+            sys.stderr.write("Error: el mapa no tiene end_hub.\n")
             sys.exit(1)
 
     def parse_hub_content(
         self, content: str
     ) -> Tuple[str, int, int, str, str, int]:
-        match_color = re.search(r"color=(\w+)", content)
-        color = (
-            match_color.group(1).lower().strip() if match_color else "none"
-        )
 
-        match_zone = re.search(r"zone=(\w+)", content)
-        zo_type = (
-            match_zone.group(1).lower().strip() if match_zone else "normal"
-        )
-        Valid_List.check_zone(zo_type)
+        color = "none"
+        zo_type = "normal"
+        max_drones = 1
 
-        match_max_drone_nb = re.search(r"max_drones=(\d+)", content)
-        max_drones = (
-            int(match_max_drone_nb.group(1)) if match_max_drone_nb else 1
-        )
+        # region
+        # match_color = re.match(r"color=(\w+)", content)
+        # color = (
+        #     match_color.group(1).strip().lower() if match_color else "none"
+        # )
 
-        if max_drones <= 0:
-            raise ValueError(f"max_drones debe ser positivo: '{max_drones}'")
+        # match_zone = re.match(r"zone=(\w+)", content)
+        # zo_type = (
+        #     match_zone.group(1).strip().lower() if match_zone else "normal"
+        # )
+        # Valid_List.check_zone(zo_type)
+
+        # match_max_drone_nb = re.match(r"max_drones=(\d+)", content)
+        # max_drones = (
+        #     int(match_max_drone_nb.group(1)) if match_max_drone_nb else 1
+        # )
+
+        # if max_drones <= 0:
+        #     raise ValueError(f"max_drones debe ser positivo: '{max_drones}'")
+
+        # main_part = re.sub(r"\[.*?\]", "", content).strip()
+        # parts = main_part.split()
+
+        # if len(parts) != 3:
+        #     raise ValueError(f"Formato de hub inválido: '{content}'")
+
+        # name, x_str, y_str = parts
+        # name = name.strip().lower()
+
+        # if "-" in name:
+        #     raise ValueError(
+        #         f"Nombre de hub inválido (contiene '-'): '{name}'"
+        #     )
+
+        # return name, int(x_str), int(y_str), zo_type, color, max_drones
+
+        # endregion
+        brackets = re.findall(r"\[(.*?)\]", content)
+        for attr in brackets:
+            attr = attr.strip()
+            if "=" not in attr:
+                raise ValueError(f"Metadato malformado: '[{attr}]'")
+            
+            key, val = attr.split("=", 1)
+            key, val = key.strip().lower(), val.strip().lower()
+
+            if key == "color":
+                color = val
+            elif key == "zone":
+                zo_type = val
+                Valid_List.check_zone(zo_type)
+            elif key == "max_drones":
+                try:
+                    max_drones = int(val)
+                    if max_drones <= 0:
+                        raise ValueError()
+                except ValueError:
+                    raise ValueError(f"max_drones debe ser un entero positivo: '{val}'")
+            else:
+                raise ValueError(f"Metadato desconocido en hub: '{key}'")
 
         main_part = re.sub(r"\[.*?\]", "", content).strip()
         parts = main_part.split()
@@ -74,14 +133,19 @@ class Parser:
             raise ValueError(f"Formato de hub inválido: '{content}'")
 
         name, x_str, y_str = parts
-        name = name.lower()
+        name = name.strip().lower()
 
         if "-" in name:
             raise ValueError(
                 f"Nombre de hub inválido (contiene '-'): '{name}'"
             )
 
-        return name, int(x_str), int(y_str), zo_type, color, max_drones
+        try:
+            x, y = int(x_str), int(y_str)
+        except ValueError:
+            raise ValueError(f"Coordenadas inválidas: '{x_str}', '{y_str}'")
+
+        return name, x, y, zo_type, color, max_drones
 
     def parse_line(self, line: str, line_num: int) -> None:
         line_stripped = line.lstrip()
@@ -89,9 +153,9 @@ class Parser:
         if line_stripped.startswith("nb_drones:"):
             try:
                 self.nb_drones = int(line_stripped.split(":")[1].strip())
-                if self.nb_drones <= 0 or self.nb_drones >= 500:
+                if self.nb_drones <= 0:
                     raise ValueError(
-                        "Número de drones inválido (debe ser entre 1 y 499)"
+                        "Número de drones inválido (debe ser mayor a 1)"
                     )
                 self.drones_parsed = True
                 return
@@ -138,7 +202,7 @@ class Parser:
             try:
                 _, content = line_stripped.split(":", 1)
 
-                match_capacity = re.search(r"max_link_capacity=(\d+)", content)
+                match_capacity = re.match(r"max_link_capacity=(\d+)", content)
                 capacity = (
                     int(match_capacity.group(1)) if match_capacity else 1
                 )

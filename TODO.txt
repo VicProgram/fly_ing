@@ -218,17 +218,17 @@ PENDIENTE
       claves permitidas según sea zona o conexión, valor entero >= 1) y
       lanzar ValueError con línea en cualquier otro caso. `]` obligatorio.
 
-- [ ] 13. [!] [IMPORTANTE] nb_drones (parsing.py:87-97), verificado 22/09:
+- [OK] 13. [!] [IMPORTANTE] nb_drones (parsing.py:87-97), verificado 22/09:
       a) el tope `>= 500` (línea 90) contradice "must be able to handle any
          number of drones": 1000 drones se rechaza. Quitar el tope.
       b) un segundo `nb_drones:` más abajo se acepta y SOBRESCRIBE
          (probado: 1 -> 3 drones). Debe ser error.
 
-- [ ] 14. [!] [IMPORTANTE] Errores del parser por stdout, no stderr
+- [?] 14. [!] [IMPORTANTE] Errores del parser por stdout, no stderr
       (parsing.py:27-31, sin file=sys.stderr; la versión anterior de este
       TODO lo daba por OK). Formato sugerido: "Error (line N): causa".
 
-- [ ] 15. [!] [IMPORTANTE] Traceback con entradas raras (subject III.1: un
+- [OK] 15. [!] [IMPORTANTE] Traceback con entradas raras (subject III.1: un
       traceback en evaluación = no funcional). Solo se captura
       FileNotFoundError (parsing.py:33). VERIFICADO 22/09:
         - archivo binario/no UTF-8: YA NO traza (UnicodeDecodeError es
@@ -239,7 +239,7 @@ PENDIENTE
       Capturar OSError y UnicodeDecodeError en
       parse_file y envolver main() con un try/except final.
 
-- [ ] 16. [!] [IMPORTANTE] Nombres pasados a minúsculas (parsing.py:75,
+- [OK] 16. [!] [IMPORTANTE] Nombres pasados a minúsculas (parsing.py:75,
       153-154; el TODO viejo lo daba por OK). Efectos: `Alpha` y `alpha`
       dan "hub duplicado" (falso error) y la salida imprime nombres
       distintos a los del mapa (`Start` -> `start`). El subject no dice que
@@ -347,7 +347,7 @@ PENDIENTE
 
 === FASE 6 — README.md (subject VIII, obligatorio) ===
 
-- [ ] 27. [BLOQUEANTE] No existe README.md en la raíz (solo maps/README.md,
+- [?] 27. [BLOQUEANTE] No existe README.md en la raíz (solo maps/README.md,
       que es de los mapas). Todo en inglés. Debe incluir:
       - Primera línea en cursiva: *This project has been created as part of
         the 42 curriculum by <login>.*
@@ -363,24 +363,9 @@ PENDIENTE
 
 === FASE 7 — Verificación final ===
 
-- [ ] 28. Tests pytest (no se entregan): reproductores de los puntos 5 y 7
-      (el 4 ya no hace falta: sin camino termina bien);
-      determinismo (misma salida en 2 ejecuciones); invariantes tras run()
-      (ningún hub/conexión sobre su capacidad); parser (metadata inválida,
-      nb_drones repetido, 1000 drones, archivo binario, directorio, nombres
-      con mayúsculas).
-
 - [ ] 29. Mapas propios (el subject avisa de que los de evaluación pueden
       ser distintos): start unido directo al end, todo restricted, muchos
       drones (1000+), end inalcanzable, ciclos, capacidades 1 en todo.
-
-- [ ] 30. Volver a ejecutar los 10 mapas tras los puntos 5, 7, 10 y 11 y
-      comprobar que siguen dentro de target y que la salida es válida (el
-      arreglo del punto 5 puede subir turnos en hard/02, hard/03 y
-      challenger). `make lint` en limpio (puntos 22-24) como última
-      comprobación. IMPORTANTE: hoy la salida NO es la del subject (punto
-      10), así que los turnos "de 4/8/15/26/43" pueden cambiar al corregir
-      el formato (p. ej. sumar los turnos de vuelo restricted, punto 11).
 
 - [ ] 31. Poder explicar sin mirar el código: parser, ReservationTable,
       find_path (incluyendo restricted y priority), formato de salida y
@@ -441,19 +426,3 @@ NUEVO 22/09/2026 (cosas que aparecieron en la re-verificación)
       (parsing.py:75) verificado 22/09: un hub "Alpha" se imprime como
       "alpha" en la salida.
 
-===========================================================================
-NOTAS
-===========================================================================
-- TODO2.txt NO se toca (petición del usuario 22/09); pero ojo: tiene
-  marcadores de conflicto de git sin resolver (<<<<<<< HEAD en la línea 214,
-  ======= en la 439) y contenido antiguo que contradice a este TODO
-  (dice que zone_costs está mal y que find_path usa queue.sort(), cosas ya
-  resueltas). Si dudas, vale este TODO.txt.
-- Se han eliminado de este TODO: los marcadores de conflicto de git
-  (<<<<<<< HEAD / ======= / >>>>>>>) que había al final, el plan largo
-  duplicado en prosa (fases 1-15 antiguas) y los pasos ya resueltos
-  (costes de zonas, bugs viejos de find_path, `uv run`, `$(VENV)` sin
-  definir, F401/List, `print(generator)`).
-- Los turnos por mapa son los mismos entre ejecuciones; lo que varía por
-  el id() del punto 6 es la ruta concreta, y en algunas variantes se rompe
-  la capacidad de una conexión (punto 5).

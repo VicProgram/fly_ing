@@ -382,8 +382,8 @@ class Solver:
                                 self._reservaion_table.reserve_link(conn, t)
                             break
 
-    def print_simulation_output(self,total_paths: list[tuple[Drone, list[tuple[Hub, int]]]],
-    ) -> None:
+    def print_simulation_output(self, total_paths:
+                                list[tuple[Drone, list[tuple[Hub, int]]]],) -> None:
         moves_by_turn: dict[int, list[str]] = {}
 
         for drone, path in total_paths:

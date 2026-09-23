@@ -13,7 +13,6 @@ def main() -> None:
 
     try:
         parser.parse_file(sys.argv[1])
-
         # PRUEBAS
         # parser.print_avances()
 
@@ -21,16 +20,12 @@ def main() -> None:
         sys.stderr.write(f"Error en el parseo {e}\n")
         sys.exit(1)
 
-    solver = Solver(drone_map, parser.nb_drones)
-
-    solver.run()
-
-    # camino = solver.find_path(solver.map.start_hub, solver.map.end_hub)
-
-    # if camino is not None:
-    #     print([hub.name for hub, turn in camino])
-    # else:
-    #     print("No hay camino disponible")
+    try:
+        solver = Solver(drone_map, parser.nb_drones)
+        solver.run()
+    except Exception as e:
+        sys.stderr.write(f"Error en la resolución {e}\n")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
