@@ -37,6 +37,31 @@ class Valid_List:
         "darked": "\033[38;5;52m"
     }
 
+    ansi_colors = {
+        "green": "\033[32m",
+        "yellow": "\033[33m",
+        "red": "\033[31m",
+        "blue": "\033[34m",
+        "cyan": "\033[36m",
+        "magenta": "\033[35m",
+        "white": "\033[37m",
+        "purple": "\033[35;1m",
+        "orange": "\033[38;5;208m",
+        "brown": "\033[38;5;130m",
+        "maroon": "\033[38;5;88m",
+        "black": "\033[90m",
+        "gold": "\033[33;1m",
+        "violet": "\033[35;1m",
+        "crimson": "\033[31;1m",
+        "darkred": "\033[31m",
+        "rainbow": "\033[36;1m",
+        "lime": "\033[38;5;118m",
+        "gray": "\033[38;5;244m",
+        "marron": "\033[38;5;88m",
+        "darked": "\033[38;5;52m",
+        "RESET": "\033[0m"
+    }
+
     @classmethod
     def check_zone(cls, zone: str) -> None:
         if zone not in cls.valid_zones:
@@ -382,9 +407,10 @@ class Solver:
                                 self._reservaion_table.reserve_link(conn, t)
                             break
 
-    def print_simulation_output(self, total_paths:
-                                list[tuple[Drone, list[tuple[Hub, int]]]],) -> None:
-        moves_by_turn: dict[int, list[str]] = {}
+    def print_simulation_output(
+            self, total_paths: list[tuple[Drone, list[tuple[Hub, int]]]]
+            ) -> None:
+        turn_moves: dict[int, list[str]] = {}
 
         for drone, path in total_paths:
             for i in range(1, len(path)):
@@ -395,30 +421,29 @@ class Solver:
                 if curr_hub.name != prev_hub.name:
                     travel_time = curr_turn - prev_turn
 
-                    # 1. Turnos intermedios "en vuelo" (si la conexión es restricted / dura > 1 turno)
                     for flight_step in range(1, travel_time):
                         flight_turn = prev_turn + flight_step
-                        if flight_turn not in moves_by_turn:
-                            moves_by_turn[flight_turn] = []
+                        if flight_turn not in turn_moves:
+                            turn_moves[flight_turn] = []
                         # Nombre formato: <origen>-<destino>
-                        moves_by_turn[flight_turn].append(
+                        turn_moves[flight_turn].append(
                             f"{drone.id}-{prev_hub.name}-{curr_hub.name}"
                         )
 
                     # 2. Turno final de llegada al Hub
-                    if curr_turn not in moves_by_turn:
-                        moves_by_turn[curr_turn] = []
-                    moves_by_turn[curr_turn].append(f"{drone.id}-{curr_hub.name}")
+                    if curr_turn not in turn_moves:
+                        turn_moves[curr_turn] = []
+                    turn_moves[curr_turn].append(f"{drone.id}-{curr_hub.name}")
 
-                # Caso B: Espera en el mismo Hub -> No se genera movimiento en stdout
+                # Caso B: Espera en el mismo Hub
 
-        if not moves_by_turn:
+        if not turn_moves:
             return
 
-        max_turn = max(moves_by_turn.keys())
+        max_turn = max(turn_moves.keys())
 
         # Imprimir SOLO las líneas de movimientos por turno
         for turn in range(1, max_turn + 1):
-            moves = moves_by_turn.get(turn, [])
+            moves = turn_moves.get(turn, [])
             if moves:
                 print(" ".join(moves))

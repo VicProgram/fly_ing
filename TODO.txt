@@ -380,7 +380,7 @@ PENDIENTE
 ===========================================================================
 NUEVO 22/09/2026 (cosas que aparecieron en la re-verificación)
 ===========================================================================
-- [!] 33. [BLOQUEANTE] README.md en la raíz NO existe (verificado 22/09;
+- [?] 33. [BLOQUEANTE] README.md en la raíz NO existe (verificado 22/09;
       solo hay maps/README.md). Es el punto 27, confirmado hoy.
 
 - [!] 34. [PARCIAL] (es el punto 20) visualizer.py: el SyntaxError de la
