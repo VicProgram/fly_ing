@@ -26,7 +26,7 @@ class Parser:
                         self.parse_line(clean_line, line_num)
                     except Exception as e:
                         sys.stderr.write(
-                            f"Ha ocurrido un error en la línea {line_num}: {e}\n"
+                            f"Error en la línea {line_num}: {e}\n"
                         )
                         sys.exit(1)
         except (FileNotFoundError, IsADirectoryError, PermissionError) as e:
@@ -107,7 +107,7 @@ class Parser:
             attr = attr.strip()
             if "=" not in attr:
                 raise ValueError(f"Metadato malformado: '[{attr}]'")
-            
+
             key, val = attr.split("=", 1)
             key, val = key.strip().lower(), val.strip().lower()
 
@@ -122,7 +122,9 @@ class Parser:
                     if max_drones <= 0:
                         raise ValueError()
                 except ValueError:
-                    raise ValueError(f"max_drones debe ser un entero positivo: '{val}'")
+                    raise ValueError(
+                        f"max_drones debe ser un entero positivo: '{val}'"
+                        )
             else:
                 raise ValueError(f"Metadato desconocido en hub: '{key}'")
 
@@ -252,13 +254,3 @@ class Parser:
             raise ValueError(
                 f"Estructura o sintaxis desconocida: '{line_stripped}'"
             )
-
-    # region
-    # def print_avances(self) -> None:
-    #     print(f"Mapa cargado exitosamente. Drones totales: {self.nb_drones}")
-    #     print(f"Mapa cargado exitosamente. Hubs totales: {self.hub_counter}")
-    #     print(
-    #         "Mapa cargado exitosamente. Conexiones totales: "
-    #         f"{self.connection_counter}"
-    #     )
-    # endregion
