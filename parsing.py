@@ -189,10 +189,12 @@ class Parser:
                 f"Estructura o sintaxis desconocida: '{line_stripped}'"
             )
 
-    def print_avances(self) -> None:
-        print(f"Mapa cargado exitosamente. Drones totales: {self.nb_drones}")
-        print(f"Mapa cargado exitosamente. Hubs totales: {self.hub_counter}")
-        print(
-            "Mapa cargado exitosamente. Conexiones totales: "
-            f"{self.connection_counter}"
-        )
+    # region
+    # def print_avances(self) -> None:
+    #     print(f"Mapa cargado exitosamente. Drones totales: {self.nb_drones}")
+    #     print(f"Mapa cargado exitosamente. Hubs totales: {self.hub_counter}")
+    #     print(
+    #         "Mapa cargado exitosamente. Conexiones totales: "
+    #         f"{self.connection_counter}"
+    #     )
+    # endregion

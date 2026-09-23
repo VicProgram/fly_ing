@@ -269,9 +269,14 @@ class Solver:
             prev_cost = min_cost.get((curr_hub.name, curr_turn), float('inf'))
             if curr_cost > prev_cost:
                 continue
-
+            
             # 1. OPCIÓN A: Moverse a nodos vecinos (Prioridad máxima)
             for neighbor_hub, connection in self.map.get_neightbors(curr_hub):
+
+                # Para no retroceder
+                if len(path) > 1 and neighbor_hub.name == path[-2][0].name:
+                    continue
+
                 step_cost = self.get_move_costs(
                     curr_hub, neighbor_hub, connection
                 )
@@ -281,7 +286,7 @@ class Solver:
                 next_turn = curr_turn + step_cost
                 link_ok = all(
                     self._reservaion_table.link_available(
-                        connection, curr_turn
+                        connection, t
                     )
                     for t in range(curr_turn, next_turn)
                 )
@@ -291,7 +296,13 @@ class Solver:
                 )
 
                 if link_ok and hub_ok:
-                    new_cost = curr_cost + step_cost
+
+                    if neighbor_hub.zo_type == "priority":
+                        bonus = 0.01
+                    else:
+                        bonus = 0.00
+                    new_cost = curr_cost + step_cost - bonus
+
                     key = (neighbor_hub.name, next_turn)
                     best = min_cost.get(key, float('inf'))
                     if new_cost < best:
@@ -329,55 +340,85 @@ class Solver:
         return None
 
     def add_path(self, path: list[tuple[Hub, int]]) -> None:
-        """Reserva correctamente el camino en la tabla de espacio-tiempo."""
+        # Reserva el camino en la tabla
         for i in range(len(path)):
             hub, turn = path[i]
 
             # Reservar Hub
             if hub.hub_type not in ("start", "end"):
-                self._reservaion_table.reserve_hub(hub.name, turn)
+                if i > 0 and path[i - 1][0].name == hub.name:
+                    prev_turn = path[i - 1][1]
+                    for t in range(prev_turn + 1, turn + 1):
+                        self._reservaion_table.reserve_hub(hub.name, t)
+                else:
+                    self._reservaion_table.reserve_hub(hub.name, turn)
 
             # Reservar Conexión
             if i > 0:
                 prev_hub, prev_turn = path[i - 1]
-                for conn in self.map.connections:
-                    is_match = (
-                        (
-                            conn.zone1.name == prev_hub.name
-                            and conn.zone2.name == hub.name
-                        )
-                        or (
-                            conn.zone2.name == prev_hub.name
-                            and conn.zone1.name == hub.name
-                        )
-                    )
-                    if is_match:
-                        for t in range(prev_turn, turn):
-                            self._reservaion_table.reserve_link(conn, t)
 
-    def print_simulation_output(
-        self,
-        total_paths: list[tuple[Drone, list[tuple[Hub, int]]]],
+                # region
+                    # Reserva por comparacion de nombre, no muy eficiente pero funciona
+                    # is_match = (
+                        # (
+                            # conn.zone1.name == prev_hub.name
+                            # and conn.zone2.name == hub.name
+                        # )
+                        # or (
+                            # conn.zone2.name == prev_hub.name
+                            # and conn.zone1.name == hub.name
+                        # )
+                    # )
+                    # if is_match:
+                        # for t in range(prev_turn, turn):
+                            # self._reservaion_table.reserve_link(conn, t)
+                    # endregion
+                if prev_hub.name != hub.name:
+                    curr_pair = frozenset({prev_hub.name, hub.name})
+
+                    for conn in self.map.connections:
+                        if conn._key() == curr_pair:
+                            for t in range(prev_turn, turn):
+                                self._reservaion_table.reserve_link(conn, t)
+                            break
+
+    def print_simulation_output(self,total_paths: list[tuple[Drone, list[tuple[Hub, int]]]],
     ) -> None:
-        # Imprime la simulación turno a turno con contador explícito
         moves_by_turn: dict[int, list[str]] = {}
 
         for drone, path in total_paths:
             for i in range(1, len(path)):
-                hub, turn = path[i]
-                prev_hub, _ = path[i - 1]
+                prev_hub, prev_turn = path[i - 1]
+                curr_hub, curr_turn = path[i]
 
-                if hub.name != prev_hub.name:
-                    if turn not in moves_by_turn:
-                        moves_by_turn[turn] = []
-                    moves_by_turn[turn].append(f"{drone.id}-{hub.name}")
+                # Caso A: El dron avanza a través de una conexión
+                if curr_hub.name != prev_hub.name:
+                    travel_time = curr_turn - prev_turn
+
+                    # 1. Turnos intermedios "en vuelo" (si la conexión es restricted / dura > 1 turno)
+                    for flight_step in range(1, travel_time):
+                        flight_turn = prev_turn + flight_step
+                        if flight_turn not in moves_by_turn:
+                            moves_by_turn[flight_turn] = []
+                        # Nombre formato: <origen>-<destino>
+                        moves_by_turn[flight_turn].append(
+                            f"{drone.id}-{prev_hub.name}-{curr_hub.name}"
+                        )
+
+                    # 2. Turno final de llegada al Hub
+                    if curr_turn not in moves_by_turn:
+                        moves_by_turn[curr_turn] = []
+                    moves_by_turn[curr_turn].append(f"{drone.id}-{curr_hub.name}")
+
+                # Caso B: Espera en el mismo Hub -> No se genera movimiento en stdout
 
         if not moves_by_turn:
             return
 
         max_turn = max(moves_by_turn.keys())
+
+        # Imprimir SOLO las líneas de movimientos por turno
         for turn in range(1, max_turn + 1):
             moves = moves_by_turn.get(turn, [])
-            moves_str = " ".join(moves) if moves else "(Sin movimientos)"
-            print(f"Turno {turn:02d}: \n {moves_str}\n")
-        print(f"--- TOTAL TURNOS: {max_turn} ---\n")
+            if moves:
+                print(" ".join(moves))
