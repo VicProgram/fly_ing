@@ -141,13 +141,6 @@ class DroneMap:
                 f"Error: El Hub con nombre '{hub.name}' ya existe."
             )
 
-        # region
-        # if (hub.x, hub.y) in self.used_coords:
-        #     raise ValueError(
-        #         f"Error: ya existe un hub en la coordenada "
-        #         f"({hub.x}, {hub.y})."
-        #     )
-        # endregion
         if hub.hub_type == "start" and self.start_hub is not None:
             raise ValueError("Error: ya existe un start_hub.")
 
@@ -246,7 +239,6 @@ class Solver:
         return ValidList.zone_costs.get(to_hub.zo_type, 1)
 
     def run(self) -> None:
-        print(f"\n--- Iniciando simulación con {len(self.drones)} drones ---")
 
         self._reservation_table.clear()
         total_paths = []
@@ -263,21 +255,14 @@ class Solver:
 
         self.print_simulation_output(total_paths)
 
-    def find_path(
-        self,
-        start: Hub,
-        end: Hub,
-        start_turn: int = 0,
-    ) -> Optional[List[tuple[Hub, int]]]:
-        # Estrcutura en la cola de prioridad:
-        # (coste_total, turno_actual, id(hub_actual), hub_actual,
-        #  camino_recorrido)
+    def find_path(self, start: Hub, end: Hub, start_turn: int = 0
+                  ) -> Optional[List[tuple[Hub, int]]]:
 
         queue: List[tuple[float, int, int, Hub, List[tuple[Hub, int]]]] = [
             (0.0, start_turn, id(start), start, [(start, start_turn)])
         ]
 
-        # Menor coste encontrado para un (hub_name, turn)
+        # Menor coste encontrado
         min_cost: Dict[tuple[str, int], float] = {
             (start.name, start_turn): 0.0
         }
@@ -292,12 +277,12 @@ class Solver:
             if curr_hub.name == end.name:
                 return path
 
-            # Si ya encontramos una ruta más barata , ignoramos
+            # Si ya hay ruta más barata
             prev_cost = min_cost.get((curr_hub.name, curr_turn), float('inf'))
             if curr_cost > prev_cost:
                 continue
 
-            # 1. OPCIÓN A: Moverse a nodos vecinos (Prioridad máxima)
+            # Moverse a nodos vecinos (Prioridad máxima)
             for neighbor_hub, connection in self.map.get_neighbors(curr_hub):
 
                 # Para no retroceder
@@ -384,22 +369,6 @@ class Solver:
             if i > 0:
                 prev_hub, prev_turn = path[i - 1]
 
-                # region
-                    # Reserva por comparacion de nombre, no muy eficiente pero funciona
-                    # is_match = (
-                        # (
-                            # conn.zone1.name == prev_hub.name
-                            # and conn.zone2.name == hub.name
-                        # )
-                        # or (
-                            # conn.zone2.name == prev_hub.name
-                            # and conn.zone1.name == hub.name
-                        # )
-                    # )
-                    # if is_match:
-                        # for t in range(prev_turn, turn):
-                            # self._reservation_table.reserve_link(conn, t)
-                    # endregion
                 if prev_hub.name != hub.name:
                     curr_pair = frozenset({prev_hub.name, hub.name})
 
@@ -419,7 +388,7 @@ class Solver:
                 prev_hub, prev_turn = path[i - 1]
                 curr_hub, curr_turn = path[i]
 
-                # Caso A: El dron avanza a través de una conexión
+                # El dron avanza
                 if curr_hub.name != prev_hub.name:
                     travel_time = curr_turn - prev_turn
 
@@ -427,24 +396,22 @@ class Solver:
                         flight_turn = prev_turn + flight_step
                         if flight_turn not in turn_moves:
                             turn_moves[flight_turn] = []
-                        # Nombre formato: <origen>-<destino>
                         turn_moves[flight_turn].append(
                             f"{drone.id}-{prev_hub.name}-{curr_hub.name}"
                         )
 
-                    # 2. Turno final de llegada al Hub
                     if curr_turn not in turn_moves:
                         turn_moves[curr_turn] = []
                     turn_moves[curr_turn].append(f"{drone.id}-{curr_hub.name}")
 
-                # Caso B: Espera en el mismo Hub
+                # El dron espera
 
         if not turn_moves:
             return
 
         max_turn = max(turn_moves.keys())
 
-        # Imprimir SOLO las líneas de movimientos por turno
+        # Imprimir líneas de movimientos
         for turn in range(1, max_turn + 1):
             moves = turn_moves.get(turn, [])
             if moves:

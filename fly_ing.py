@@ -13,8 +13,6 @@ def main() -> None:
 
     try:
         parser.parse_file(sys.argv[1])
-        # PRUEBAS
-        # parser.print_avances()
 
     except ValueError as e:
         sys.stderr.write(f"Error en el parseo {e}\n")
