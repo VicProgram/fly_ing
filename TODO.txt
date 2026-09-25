@@ -224,7 +224,7 @@ PENDIENTE
       b) un segundo `nb_drones:` más abajo se acepta y SOBRESCRIBE
          (probado: 1 -> 3 drones). Debe ser error.
 
-- [?] 14. [!] [IMPORTANTE] Errores del parser por stdout, no stderr
+- [OK] 14. [!] [IMPORTANTE] Errores del parser por stdout, no stderr
       (parsing.py:27-31, sin file=sys.stderr; la versión anterior de este
       TODO lo daba por OK). Formato sugerido: "Error (line N): causa".
 

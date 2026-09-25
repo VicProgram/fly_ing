@@ -124,7 +124,7 @@ class Drone:
             )
         print(f"In transit: {self.in_transit}")
         print(f"Turn number: {self.turn}")
-        print(f"Has arrived?: {self.has_arrived}")[]
+        print(f"Has arrived?: {self.has_arrived}")
 
 
 class Drone_Map:
