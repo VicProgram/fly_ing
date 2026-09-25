@@ -2,13 +2,13 @@ import re
 import sys
 from typing import Any, Tuple
 
-from models import Connection, Drone_Map, Hub, Valid_List
+from models import Connection, DroneMap, Hub, ValidList
 
 
 class Parser:
 
-    def __init__(self, drone_map: Drone_Map) -> None:
-        self.map: Drone_Map = drone_map
+    def __init__(self, dronemap: DroneMap) -> None:
+        self.map: DroneMap = dronemap
         self.nb_drones: int = 0
         self.hub_counter: int = 0
         self.connection_counter: int = 0
@@ -78,7 +78,7 @@ class Parser:
         # zo_type = (
         #     match_zone.group(1).strip().lower() if match_zone else "normal"
         # )
-        # Valid_List.check_zone(zo_type)
+        # ValidList.check_zone(zo_type)
 
         # match_max_drone_nb = re.match(r"max_drones=(\d+)", content)
         # max_drones = (
@@ -117,7 +117,7 @@ class Parser:
         #         color = val
         #     elif key == "zone":
         #         zo_type = val.strip().split()[0]
-        #         Valid_List.check_zone(zo_type)
+        #         ValidList.check_zone(zo_type)
         #     elif key == "max_drones":
         #         try:
         #             max_drones = int(val)
@@ -131,7 +131,7 @@ class Parser:
         #         raise ValueError(f"Metadato desconocido en hub: '{key}'")
         # endregion
 
-        Valid_List.check_zone(zo_type)
+        ValidList.check_zone(zo_type)
         main_part = re.sub(r"\[.*?\]", "", content).strip()
         parts = main_part.split()
 
@@ -174,7 +174,7 @@ class Parser:
                 f"(Línea leída: '{line}')"
             )
 
-        if any(line_stripped.startswith(p) for p in Valid_List.valid_hubs):
+        if any(line_stripped.startswith(p) for p in ValidList.valid_hubs):
             prefix, content = line_stripped.split(":", 1)
             content = content.strip()
 
@@ -259,7 +259,7 @@ class Parser:
                 f"Estructura o sintaxis desconocida: '{line_stripped}'"
             )
 
-    def parse_metadata(line:  str, allow_keys: set) -> dict[str, str]:
+    def parse_metadata(self, line:  str, allow_keys: set[str] | None = None) -> dict[str, str]:
         if "[" not in line or "]" not in line:
             return {}
 
@@ -283,7 +283,7 @@ class Parser:
                 raise ValueError(f"Metadato desconocido: '{key}'")
 
             if key in ("max_drones", "capacity", "max_link_capacity"):
-                if not val.isdigit() or int(val) <= 1:
+                if not val.isdigit() or int(val) < 1:
                     raise ValueError(
                         f"Valor inválido para '{key}': '{val}' (debe ser un entero mayor a 1)"
                     )

@@ -366,6 +366,7 @@ PENDIENTE
 - [ ] 29. Mapas propios (el subject avisa de que los de evaluación pueden
       ser distintos): start unido directo al end, todo restricted, muchos
       drones (1000+), end inalcanzable, ciclos, capacidades 1 en todo.
+      (No necesario)
 
 - [ ] 31. Poder explicar sin mirar el código: parser, ReservationTable,
       find_path (incluyendo restricted y priority), formato de salida y
@@ -373,10 +374,10 @@ PENDIENTE
 
 === BONUS (solo si todo lo anterior está sólido) ===
 
-- [ ] 32. "Perfectamente" = igualar o batir los targets de todos los mapas
+- [OK] 32. "Perfectamente" = igualar o batir los targets de todos los mapas
       (ya se cumple en las ejecuciones válidas) y challenger < 45 turnos
       (ahora 43). Confirmarlo tras el punto 30; no empezarlo antes.
-
+      (Comprobar, en principio pasan todos)
 ===========================================================================
 NUEVO 22/09/2026 (cosas que aparecieron en la re-verificación)
 ===========================================================================

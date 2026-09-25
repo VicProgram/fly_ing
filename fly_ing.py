@@ -1,5 +1,5 @@
 from parsing import Parser
-from models import Solver, Drone_Map
+from models import Solver, DroneMap
 import sys
 
 
@@ -8,7 +8,7 @@ def main() -> None:
         print("Uso: python3 -m fly_ing <mapa.txt>", file=sys.stderr)
         sys.exit(1)
 
-    drone_map = Drone_Map()
+    drone_map = DroneMap()
     parser = Parser(drone_map)
 
     try:

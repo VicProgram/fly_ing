@@ -3,7 +3,7 @@ import heapq
 import sys
 
 
-class Valid_List:
+class ValidList:
 
     valid_hubs = {"hub:", "start_hub:", "end_hub:"}
 
@@ -127,7 +127,7 @@ class Drone:
         print(f"Has arrived?: {self.has_arrived}")
 
 
-class Drone_Map:
+class DroneMap:
     def __init__(self) -> None:
         self.hubs: Dict[str, Hub] = {}
         self.connections: list[Connection] = []
@@ -171,7 +171,7 @@ class Drone_Map:
                 f"'{connection.zone2.name}' ya existe."
             )
 
-    def get_neightbors(self, hub: Hub) -> list[tuple[Hub, Connection]]:
+    def get_neighbors(self, hub: Hub) -> list[tuple[Hub, Connection]]:
 
         neightbors = []
         for conn in self.connections:
@@ -215,11 +215,11 @@ class ReservationTable:
 
 
 class Solver:
-    def __init__(self, drone_map: Drone_Map, drones_number: int) -> None:
-        self.map: Drone_Map = drone_map
+    def __init__(self, dronemap: DroneMap, drones_number: int) -> None:
+        self.map: DroneMap = dronemap
         self.curr_turn: int = 0
         self.history: list = []
-        self._reservaion_table = ReservationTable()
+        self._reservation_table = ReservationTable()
 
         self.drones: list[Drone] = [
             Drone(f"D{i}", self.map.start_hub)
@@ -243,12 +243,12 @@ class Solver:
             ) -> int:
         if to_hub.zo_type == "blocked":
             return 999999
-        return Valid_List.zone_costs.get(to_hub.zo_type, 1)
+        return ValidList.zone_costs.get(to_hub.zo_type, 1)
 
     def run(self) -> None:
         print(f"\n--- Iniciando simulación con {len(self.drones)} drones ---")
 
-        self._reservaion_table.clear()
+        self._reservation_table.clear()
         total_paths = []
 
         for drone in self.drones:
@@ -298,7 +298,7 @@ class Solver:
                 continue
 
             # 1. OPCIÓN A: Moverse a nodos vecinos (Prioridad máxima)
-            for neighbor_hub, connection in self.map.get_neightbors(curr_hub):
+            for neighbor_hub, connection in self.map.get_neighbors(curr_hub):
 
                 # Para no retroceder
                 if len(path) > 1 and neighbor_hub.name == path[-2][0].name:
@@ -312,13 +312,13 @@ class Solver:
 
                 next_turn = curr_turn + step_cost
                 link_ok = all(
-                    self._reservaion_table.link_available(
+                    self._reservation_table.link_available(
                         connection, t
                     )
                     for t in range(curr_turn, next_turn)
                 )
 
-                hub_ok = self._reservaion_table.hub_available(
+                hub_ok = self._reservation_table.hub_available(
                     neighbor_hub, next_turn
                 )
 
@@ -347,7 +347,7 @@ class Solver:
 
             if curr_hub.hub_type != "end":
                 next_turn = curr_turn + 1
-                if self._reservaion_table.hub_available(curr_hub, next_turn):
+                if self._reservation_table.hub_available(curr_hub, next_turn):
                     wait_cost = curr_cost + 1.0001
                     wait_key = (curr_hub.name, next_turn)
                     best = min_cost.get(wait_key, float('inf'))
@@ -376,9 +376,9 @@ class Solver:
                 if i > 0 and path[i - 1][0].name == hub.name:
                     prev_turn = path[i - 1][1]
                     for t in range(prev_turn + 1, turn + 1):
-                        self._reservaion_table.reserve_hub(hub.name, t)
+                        self._reservation_table.reserve_hub(hub.name, t)
                 else:
-                    self._reservaion_table.reserve_hub(hub.name, turn)
+                    self._reservation_table.reserve_hub(hub.name, turn)
 
             # Reservar Conexión
             if i > 0:
@@ -398,7 +398,7 @@ class Solver:
                     # )
                     # if is_match:
                         # for t in range(prev_turn, turn):
-                            # self._reservaion_table.reserve_link(conn, t)
+                            # self._reservation_table.reserve_link(conn, t)
                     # endregion
                 if prev_hub.name != hub.name:
                     curr_pair = frozenset({prev_hub.name, hub.name})
@@ -406,7 +406,7 @@ class Solver:
                     for conn in self.map.connections:
                         if conn._key() == curr_pair:
                             for t in range(prev_turn, turn):
-                                self._reservaion_table.reserve_link(conn, t)
+                                self._reservation_table.reserve_link(conn, t)
                             break
 
     def print_simulation_output(
