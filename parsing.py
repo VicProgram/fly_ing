@@ -114,7 +114,7 @@ class Parser:
             if key == "color":
                 color = val
             elif key == "zone":
-                zo_type = val
+                zo_type = val.strip().split()[0]
                 Valid_List.check_zone(zo_type)
             elif key == "max_drones":
                 try:
@@ -204,7 +204,7 @@ class Parser:
             try:
                 _, content = line_stripped.split(":", 1)
 
-                match_capacity = re.match(r"max_link_capacity=(\d+)", content)
+                match_capacity = re.search(r"max_link_capacity=(\d+)", content)
                 capacity = (
                     int(match_capacity.group(1)) if match_capacity else 1
                 )
