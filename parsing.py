@@ -143,15 +143,9 @@ class Parser:
             try:
                 _, content = line_stripped.split(":", 1)
 
-                match_capacity = re.search(r"max_link_capacity=(\d+)", content)
-                capacity = (
-                    int(match_capacity.group(1)) if match_capacity else 1
-                )
-
-                if capacity <= 0:
-                    raise ValueError(
-                        f"max_link_capacity debe ser positivo: '{capacity}'"
-                    )
+                allow_keys_conn = {"max_link_capacity"}
+                meta = self.parse_metadata(content, allow_keys_conn)
+                capacity = int(meta.get("max_link_capacity", 1))
 
                 content_clean = re.sub(r"\[.*?\]", "", content).strip()
 
