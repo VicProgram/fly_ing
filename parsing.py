@@ -58,7 +58,7 @@ class Parser:
             sys.exit(1)
 
     def parse_hub_content(
-        self, content: str, allo2w_keys: set = {"color", "zone", "max_drones"} 
+        self, content: str, allow_keys: set = {"color", "zone", "max_drones"} 
     ) -> Tuple[str, int, int, str, str, int]:
 
         allow_keys = {"color", "zone", "max_drones"}
