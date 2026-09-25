@@ -318,8 +318,8 @@ PENDIENTE
       Con --strict (opcional, recomendado) saldrán más: `frozenset` ->
       frozenset[str] (models.py:73), `set` -> set[tuple[int,int]] (110),
       `history: list` -> list[str] (156), `neightbors = []` sin anotar
-      (141), `nuevo_hub: Any` (parsing.py:113, quitar el Any).
-      Meta: `make lint` y `make lint-strict` en limpio.
+      (141), `nuevo_hub: Any` (parsing.py:113, quitar el Any).-
+      Meta: `make lint` y `make lint-strict` en limpio.-µ· 
 
 - [ ] 24. [BLOQUEANTE] Docstrings PEP 257 (recontado 22/09 con ast):
       0 de 8 clases (Parser, Valid_List, Hub, Connection, Drone, Drone_Map,

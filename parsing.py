@@ -1,4 +1,5 @@
-import re, sys
+import sys
+import re
 from typing import Any, Tuple
 from models import Connection, DroneMap, Hub, ValidList
 
@@ -56,7 +57,7 @@ class Parser:
             sys.exit(1)
 
     def parse_hub_content(
-        self, content: str, allow_keys: set = {"color", "zone", "max_drones"} 
+        self, content: str, allow_keys: set = {"color", "zone", "max_drones"}
     ) -> Tuple[str, int, int, str, str, int]:
 
         allow_keys = {"color", "zone", "max_drones"}
@@ -188,12 +189,16 @@ class Parser:
                 f"Estructura o sintaxis desconocida: '{line_stripped}'"
             )
 
-    def parse_metadata(self, line:  str, allow_keys: set[str] | None = None) -> dict[str, str]:
+    def parse_metadata(
+            self, line:  str, allow_keys: set[str] | None = None
+            ) -> dict[str, str]:
         if "[" not in line or "]" not in line:
             return {}
 
         if line.count("[") != 1 or line.count("]") != 1:
-            raise ValueError("Metadatos malformados (deben estar entre '[' y ']')")
+            raise ValueError(
+                "Metadatos malformados (deben estar entre '[' y ']')"
+                )
 
         content = line[line.index("[") + 1 : line.index("]")].strip()
         if not content:
@@ -214,7 +219,8 @@ class Parser:
             if key in ("max_drones", "capacity", "max_link_capacity"):
                 if not val.isdigit() or int(val) < 1:
                     raise ValueError(
-                        f"Valor inválido para '{key}': '{val}' (debe ser un entero mayor a 1)"
+                        f"Valor inválido para '{key}': '{val}' "
+                        f"(debe ser un entero mayor a 1)"
                     )
             metadata[key] = val
         return metadata
