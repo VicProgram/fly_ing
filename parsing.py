@@ -1,7 +1,5 @@
-import re
-import sys
+import re, sys
 from typing import Any, Tuple
-
 from models import Connection, DroneMap, Hub, ValidList
 
 
@@ -67,69 +65,6 @@ class Parser:
         color = meta.get("color", "none")
         zo_type = meta.get("zone", "normal")
         max_drones = int(meta.get("max_drones", 1))
-
-        # region
-        # match_color = re.match(r"color=(\w+)", content)
-        # color = (
-        #     match_color.group(1).strip().lower() if match_color else "none"
-        # )
-
-        # match_zone = re.match(r"zone=(\w+)", content)
-        # zo_type = (
-        #     match_zone.group(1).strip().lower() if match_zone else "normal"
-        # )
-        # ValidList.check_zone(zo_type)
-
-        # match_max_drone_nb = re.match(r"max_drones=(\d+)", content)
-        # max_drones = (
-        #     int(match_max_drone_nb.group(1)) if match_max_drone_nb else 1
-        # )
-
-        # if max_drones <= 0:
-        #     raise ValueError(f"max_drones debe ser positivo: '{max_drones}'")
-
-        # main_part = re.sub(r"\[.*?\]", "", content).strip()
-        # parts = main_part.split()
-
-        # if len(parts) != 3:
-        #     raise ValueError(f"Formato de hub inválido: '{content}'")
-
-        # name, x_str, y_str = parts
-        # name = name.strip().lower()
-
-        # if "-" in name:
-        #     raise ValueError(
-        #         f"Nombre de hub inválido (contiene '-'): '{name}'"
-        #     )
-
-        # return name, int(x_str), int(y_str), zo_type, color, max_drones
-
-        # brackets = re.findall(r"\[(.*?)\]", content)
-        # for attr in brackets:
-        #     attr = attr.strip()
-        #     if "=" not in attr:
-        #         raise ValueError(f"Metadato malformado: '[{attr}]'")
-
-        #     key, val = attr.split("=", 1)
-        #     key, val = key.strip().lower(), val.strip().lower()
-
-        #     if key == "color":
-        #         color = val
-        #     elif key == "zone":
-        #         zo_type = val.strip().split()[0]
-        #         ValidList.check_zone(zo_type)
-        #     elif key == "max_drones":
-        #         try:
-        #             max_drones = int(val)
-        #             if max_drones <= 0:
-        #                 raise ValueError()
-        #         except ValueError:
-        #             raise ValueError(
-        #                 f"max_drones debe ser un entero positivo: '{val}'"
-        #                 )
-        #     else:
-        #         raise ValueError(f"Metadato desconocido en hub: '{key}'")
-        # endregion
 
         ValidList.check_zone(zo_type)
         main_part = re.sub(r"\[.*?\]", "", content).strip()
