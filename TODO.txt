@@ -245,17 +245,17 @@ PENDIENTE
       distintos a los del mapa (`Start` -> `start`). El subject no dice que
       sea case-insensitive: usar los nombres tal cual.
 
-- [ ] 17. [MENOR] Regla "no dos hubs en la misma coordenada"
+- [OK] 17. [MENOR] Regla "no dos hubs en la misma coordenada"
       (models.py:116-117): el subject solo exige nombre único y coordenadas
       enteras. Es una restricción extra que puede rechazar un mapa de
       evaluación válido -> recomendable quitarla.
 
-- [ ] 18. [MENOR] Mensajes: la conexión duplicada dice "La conexion 'Conn2'
+- [OK] 18. [MENOR] Mensajes: la conexión duplicada dice "La conexion 'Conn2'
       ya existe" (nombre interno; decir "g-s duplicada de s-g"); el usage de
       fly_ing.py:8 dice "python3 -m tu_modulo mapa.txt" (poner
       "python3 fly_ing.py <map_file>").
 
-- [ ] 19. [MENOR->IMPORTANTE, verificado 22/09] Comentarios en línea
+- [OK] 19. [MENOR->IMPORTANTE, verificado 22/09] Comentarios en línea
       (`nb_drones: 1 # x`) dan error: "invalid literal for int(): '1 # x'".
       El subject dice "Comments start with '#'"; cortar la línea en el
       primer '#' antes de parsear lo cubre (vale para todas las líneas).

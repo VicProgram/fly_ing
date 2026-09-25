@@ -18,7 +18,7 @@ class Parser:
         try:
             with open(map_path, "r", encoding="utf-8") as file:
                 for line_num, line in enumerate(file, 1):
-                    clean_line = line.strip()
+                    clean_line = line.split("#")[0].strip()
 
                     if not clean_line or clean_line.startswith("#"):
                         continue
@@ -61,9 +61,12 @@ class Parser:
         self, content: str
     ) -> Tuple[str, int, int, str, str, int]:
 
-        color = "none"
-        zo_type = "normal"
-        max_drones = 1
+        allow_keys = {"color", "zone", "max_drones"}
+        meta = self.parse_metadata(content, allow_keys)
+
+        color = meta.get("color", "none")
+        zo_type = meta.get("zone", "normal")
+        max_drones = int(meta.get("max_drones", 1))
 
         # region
         # match_color = re.match(r"color=(\w+)", content)
@@ -101,33 +104,34 @@ class Parser:
 
         # return name, int(x_str), int(y_str), zo_type, color, max_drones
 
+        # brackets = re.findall(r"\[(.*?)\]", content)
+        # for attr in brackets:
+        #     attr = attr.strip()
+        #     if "=" not in attr:
+        #         raise ValueError(f"Metadato malformado: '[{attr}]'")
+
+        #     key, val = attr.split("=", 1)
+        #     key, val = key.strip().lower(), val.strip().lower()
+
+        #     if key == "color":
+        #         color = val
+        #     elif key == "zone":
+        #         zo_type = val.strip().split()[0]
+        #         Valid_List.check_zone(zo_type)
+        #     elif key == "max_drones":
+        #         try:
+        #             max_drones = int(val)
+        #             if max_drones <= 0:
+        #                 raise ValueError()
+        #         except ValueError:
+        #             raise ValueError(
+        #                 f"max_drones debe ser un entero positivo: '{val}'"
+        #                 )
+        #     else:
+        #         raise ValueError(f"Metadato desconocido en hub: '{key}'")
         # endregion
-        brackets = re.findall(r"\[(.*?)\]", content)
-        for attr in brackets:
-            attr = attr.strip()
-            if "=" not in attr:
-                raise ValueError(f"Metadato malformado: '[{attr}]'")
 
-            key, val = attr.split("=", 1)
-            key, val = key.strip().lower(), val.strip().lower()
-
-            if key == "color":
-                color = val
-            elif key == "zone":
-                zo_type = val.strip().split()[0]
-                Valid_List.check_zone(zo_type)
-            elif key == "max_drones":
-                try:
-                    max_drones = int(val)
-                    if max_drones <= 0:
-                        raise ValueError()
-                except ValueError:
-                    raise ValueError(
-                        f"max_drones debe ser un entero positivo: '{val}'"
-                        )
-            else:
-                raise ValueError(f"Metadato desconocido en hub: '{key}'")
-
+        Valid_List.check_zone(zo_type)
         main_part = re.sub(r"\[.*?\]", "", content).strip()
         parts = main_part.split()
 
@@ -254,3 +258,36 @@ class Parser:
             raise ValueError(
                 f"Estructura o sintaxis desconocida: '{line_stripped}'"
             )
+
+    def parse_metadata(line:  str, allow_keys: set) -> dict[str, str]:
+        if "[" not in line or "]" not in line:
+            return {}
+
+        if line.count("[") != 1 or line.count("]") != 1:
+            raise ValueError("Metadatos malformados (deben estar entre '[' y ']')")
+
+        content = line[line.index("[") + 1 : line.index("]")].strip()
+        if not content:
+            return {}
+
+        metadata = {}
+
+        for item in content.split():
+            if "=" not in item:
+                raise ValueError(f"Metadato malformado: '{item}'")
+
+            key, val = item.split("=", 1)
+            key, val = key.strip().lower(), val.strip()
+
+            if key not in allow_keys:
+                raise ValueError(f"Metadato desconocido: '{key}'")
+
+            if key in ("max_drones", "capacity", "max_link_capacity"):
+                if not val.isdigit() or int(val) <= 1:
+                    raise ValueError(
+                        f"Valor inválido para '{key}': '{val}' (debe ser un entero mayor a 1)"
+                    )
+            metadata[key] = val
+        return metadata
+    
+        

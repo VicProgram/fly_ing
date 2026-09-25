@@ -124,7 +124,7 @@ class Drone:
             )
         print(f"In transit: {self.in_transit}")
         print(f"Turn number: {self.turn}")
-        print(f"Has arrived?: {self.has_arrived}")
+        print(f"Has arrived?: {self.has_arrived}")[]
 
 
 class Drone_Map:
@@ -141,12 +141,13 @@ class Drone_Map:
                 f"Error: El Hub con nombre '{hub.name}' ya existe."
             )
 
-        if (hub.x, hub.y) in self.used_coords:
-            raise ValueError(
-                f"Error: ya existe un hub en la coordenada "
-                f"({hub.x}, {hub.y})."
-            )
-
+        # region
+        # if (hub.x, hub.y) in self.used_coords:
+        #     raise ValueError(
+        #         f"Error: ya existe un hub en la coordenada "
+        #         f"({hub.x}, {hub.y})."
+        #     )
+        # endregion
         if hub.hub_type == "start" and self.start_hub is not None:
             raise ValueError("Error: ya existe un start_hub.")
 
@@ -166,7 +167,8 @@ class Drone_Map:
             self.connections.append(connection)
         else:
             raise ValueError(
-                f"Error: La conexion '{connection.name}' ya existe"
+                f"Error: La conexión entre '{connection.zone1.name}' y "
+                f"'{connection.zone2.name}' ya existe."
             )
 
     def get_neightbors(self, hub: Hub) -> list[tuple[Hub, Connection]]:
@@ -294,7 +296,7 @@ class Solver:
             prev_cost = min_cost.get((curr_hub.name, curr_turn), float('inf'))
             if curr_cost > prev_cost:
                 continue
-            
+
             # 1. OPCIÓN A: Moverse a nodos vecinos (Prioridad máxima)
             for neighbor_hub, connection in self.map.get_neightbors(curr_hub):
 

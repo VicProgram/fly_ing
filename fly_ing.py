@@ -5,7 +5,7 @@ import sys
 
 def main() -> None:
     if len(sys.argv) < 2:
-        print("Uso: python3 -m tu_modulo mapa.txt", file=sys.stderr)
+        print("Uso: python3 -m fly_ing <mapa.txt>", file=sys.stderr)
         sys.exit(1)
 
     drone_map = Drone_Map()
