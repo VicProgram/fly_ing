@@ -204,7 +204,7 @@ PENDIENTE
 
 === FASE 3 — Parser (subject VII.4) ===
 
-- [ ] 12. [!] [IMPORTANTE] Metadata inválida aceptada en silencio (se usa
+- [OK] 12. [!] [IMPORTANTE] Metadata inválida aceptada en silencio (se usa
       re.search sin validar el bloque; parsing.py:51-63 y 139-145).
       Verificado 22/09 con `[zone=restricted max_drones=-1 foo=bar]`:
       se acepta sin ningún error (max_drones=-1 -> el regex (\d+) no casa
