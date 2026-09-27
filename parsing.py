@@ -1,3 +1,9 @@
+"""Parser for the Fly-in drone network map file format.
+
+Reads and validates map files defining zones, connections, and drone counts,
+constructing a DroneMap instance for the solver.
+"""
+
 import sys
 import re
 from typing import Any, Tuple
@@ -5,8 +11,25 @@ from models import Connection, DroneMap, Hub, ValidList
 
 
 class Parser:
+    """Parses map files and constructs a DroneMap.
+
+    Validates syntax, enforces uniqueness constraints, and builds
+    the network topology from the input file.
+
+    Attributes:
+        map: The DroneMap being constructed.
+        nb_drones: Number of drones to simulate.
+        hub_counter: Running count of hubs parsed.
+        connection_counter: Running count of connections parsed.
+        drones_parsed: Whether nb_drones has been successfully read.
+    """
 
     def __init__(self, dronemap: DroneMap) -> None:
+        """Initialize the parser with an empty DroneMap.
+
+        Args:
+            dronemap: The DroneMap instance to populate.
+        """
         self.map: DroneMap = dronemap
         self.nb_drones: int = 0
         self.hub_counter: int = 0
@@ -14,6 +37,17 @@ class Parser:
         self.drones_parsed: bool = False
 
     def parse_file(self, map_path: str) -> None:
+        """Parse a map file and populate the DroneMap.
+
+        Reads the file line by line, stripping comments and blank lines,
+        then delegates to parse_line for each valid line.
+
+        Args:
+            map_path: Path to the map file to parse.
+
+        Raises:
+            SystemExit: On file I/O errors or parsing errors.
+        """
         try:
             with open(map_path, "r", encoding="utf-8") as file:
                 for line_num, line in enumerate(file, 1):
@@ -25,71 +59,97 @@ class Parser:
                         self.parse_line(clean_line, line_num)
                     except Exception as e:
                         sys.stderr.write(
-                            f"Error en la línea {line_num}: {e}\n"
+                            f"Error on line {line_num}: {e}\n"
                         )
                         sys.exit(1)
         except (FileNotFoundError, IsADirectoryError, PermissionError) as e:
-            sys.stderr.write(f"Error al abrir el archivo '{map_path}': {e}\n")
+            sys.stderr.write(f"Error opening file '{map_path}': {e}\n")
             sys.exit(1)
 
         except UnicodeDecodeError:
             sys.stderr.write(
-                f"Error: El archivo '{map_path}' no es un UTF-8 válido.\n"
+                f"Error: File '{map_path}' is not valid UTF-8.\n"
             )
             sys.exit(1)
 
         except OSError as e:
-            sys.stderr.write(f"Error de E/S en '{map_path}': {e}\n")
+            sys.stderr.write(f"I/O error on '{map_path}': {e}\n")
             sys.exit(1)
 
         except FileNotFoundError:
             sys.stderr.write(
-                f"Error: El archivo '{map_path}' no existe.\n"
+                f"Error: File '{map_path}' does not exist.\n"
             )
             sys.exit(1)
 
         if self.map.start_hub is None:
-            sys.stderr.write("Error: el mapa no tiene start_hub.")
+            sys.stderr.write("Error: map has no start_hub.")
             sys.exit(1)
 
         if self.map.end_hub is None:
-            sys.stderr.write("Error: el mapa no tiene end_hub.\n")
+            sys.stderr.write("Error: map has no end_hub.\n")
             sys.exit(1)
 
     def parse_hub_content(
         self, content: str, allow_keys: set = {"color", "zone", "max_drones"}
     ) -> Tuple[str, int, int, str, str, int]:
+        """Parse hub metadata and extract hub properties.
 
+        Extracts zone type, color, max_drones from bracket metadata,
+        then parses the name and coordinates from the remaining content.
+
+        Args:
+            content: The raw hub line content after the prefix.
+            allow_keys: Set of allowed metadata keys for this context.
+
+        Returns:
+            Tuple of (name, x, y, zone_type, color, max_drones).
+
+        Raises:
+            ValueError: On invalid format, coordinates, or zone type.
+        """
         allow_keys = {"color", "zone", "max_drones"}
         meta = self.parse_metadata(content, allow_keys)
 
         color = meta.get("color", "none")
-        zo_type = meta.get("zone", "normal")
+        zone_type = meta.get("zone", "normal")
         max_drones = int(meta.get("max_drones", 1))
 
-        ValidList.check_zone(zo_type)
+        ValidList.check_zone(zone_type)
         main_part = re.sub(r"\[.*?\]", "", content).strip()
         parts = main_part.split()
 
         if len(parts) != 3:
-            raise ValueError(f"Formato de hub inválido: '{content}'")
+            raise ValueError(f"Invalid hub format: '{content}'")
 
         name, x_str, y_str = parts
         name = name.strip().lower()
 
         if "-" in name:
             raise ValueError(
-                f"Nombre de hub inválido (contiene '-'): '{name}'"
+                f"Invalid hub name (contains '-'): '{name}'"
             )
 
         try:
             x, y = int(x_str), int(y_str)
         except ValueError:
-            raise ValueError(f"Coordenadas inválidas: '{x_str}', '{y_str}'")
+            raise ValueError(f"Invalid coordinates: '{x_str}', '{y_str}'")
 
-        return name, x, y, zo_type, color, max_drones
+        return name, x, y, zone_type, color, max_drones
 
     def parse_line(self, line: str, line_num: int) -> None:
+        """Parse a single line of the map file.
+
+        Dispatches to the appropriate handler based on line prefix
+        (nb_drones, hub definitions, or connections).
+
+        Args:
+            line: The cleaned line content (no comments).
+            line_num: Line number for error reporting.
+
+        Raises:
+            ValueError: On unknown syntax or validation failures.
+        """
         line_stripped = line.lstrip()
 
         if line_stripped.startswith("nb_drones:"):
@@ -97,48 +157,48 @@ class Parser:
                 self.nb_drones = int(line_stripped.split(":")[1].strip())
                 if self.nb_drones <= 0:
                     raise ValueError(
-                        "Número de drones inválido (debe ser mayor a 1)"
+                        "Invalid drone number (must be greater than 1)"
                     )
                 self.drones_parsed = True
                 return
             except (ValueError, IndexError) as e:
-                raise ValueError(f"Estructura incorrecta en nb_drones: {e}")
+                raise ValueError(f"Incorrect structure in nb_drones: {e}")
 
         if not self.drones_parsed:
             raise ValueError(
-                "La primera línea de datos válidos debe definir 'nb_drones:' "
-                f"(Línea leída: '{line}')"
+                "The first valid data line must define 'nb_drones:' "
+                f"(Line read: '{line}')"
             )
 
         if any(line_stripped.startswith(p) for p in ValidList.valid_hubs):
             prefix, content = line_stripped.split(":", 1)
             content = content.strip()
 
-            name, x, y, zo_type, color, max_drones = self.parse_hub_content(
+            name, x, y, zone_type, color, max_drones = self.parse_hub_content(
                 content
             )
 
-            nuevo_hub: Any = None
+            new_hub: Any = None
             match prefix:
                 case "start_hub":
-                    nuevo_hub = Hub(
-                        name, x, y, zo_type, color, "start", max_drones
+                    new_hub = Hub(
+                        name, x, y, zone_type, color, "start", max_drones
                     )
                     self.hub_counter += 1
                 case "end_hub":
-                    nuevo_hub = Hub(
-                        name, x, y, zo_type, color, "end", max_drones
+                    new_hub = Hub(
+                        name, x, y, zone_type, color, "end", max_drones
                     )
                     self.hub_counter += 1
                 case "hub":
-                    nuevo_hub = Hub(
-                        name, x, y, zo_type, color, "normal", max_drones
+                    new_hub = Hub(
+                        name, x, y, zone_type, color, "normal", max_drones
                     )
                     self.hub_counter += 1
                 case _:
-                    raise ValueError(f"Prefijo de hub desconocido: '{prefix}'")
+                    raise ValueError(f"Unknown hub prefix: '{prefix}'")
 
-            self.map.add_hub(nuevo_hub)
+            self.map.add_hub(new_hub)
 
         elif line_stripped.startswith("connection:"):
             try:
@@ -151,7 +211,7 @@ class Parser:
                 content_clean = re.sub(r"\[.*?\]", "", content).strip()
 
                 if "-" not in content_clean:
-                    raise ValueError("Conexión malformada.")
+                    raise ValueError("Malformed connection.")
 
                 zone_1, zone_2 = content_clean.split("-", 1)
                 zone_1 = zone_1.strip().lower()
@@ -162,13 +222,13 @@ class Parser:
 
                 if not first_hub or not second_hub:
                     raise ValueError(
-                        "zona no encontrada en la conexión "
-                        f"('{zone_1}' o '{zone_2}')."
+                        "Zone not found in connection "
+                        f"('{zone_1}' or '{zone_2}')."
                     )
 
                 if first_hub is second_hub:
                     raise ValueError(
-                        "Una conexión no puede unir un hub consigo mismo: "
+                        "A connection cannot link a hub to itself: "
                         f"'{zone_1}'"
                     )
 
@@ -182,23 +242,39 @@ class Parser:
                 self.map.add_connection(new_connection)
 
             except (ValueError, AttributeError, IndexError) as e:
-                raise ValueError(f"Error procesando la conexión: {e}")
+                raise ValueError(f"Error processing connection: {e}")
 
         else:
             raise ValueError(
-                f"Estructura o sintaxis desconocida: '{line_stripped}'"
+                f"Unknown structure or syntax: '{line_stripped}'"
             )
 
     def parse_metadata(
             self, line:  str, allow_keys: set[str] | None = None
             ) -> dict[str, str]:
+        """Parse bracket-enclosed metadata from a line.
+
+        Extracts key=value pairs from [...] blocks, validating keys
+        against the allowed set and ensuring capacity values are
+        positive integers.
+
+        Args:
+            line: The line content potentially containing metadata.
+            allow_keys: Set of permitted metadata keys. Defaults to None.
+
+        Returns:
+            Dictionary of metadata key-value pairs.
+
+        Raises:
+            ValueError: On malformed metadata, unknown keys, or invalid values.
+        """
         if "[" not in line or "]" not in line:
             return {}
 
         if line.count("[") != 1 or line.count("]") != 1:
             raise ValueError(
-                "Metadatos malformados (deben estar entre '[' y ']')"
-                )
+                "Malformed metadata (must be between '[' and ']')"
+            )
 
         content = line[line.index("[") + 1 : line.index("]")].strip()
         if not content:
@@ -208,19 +284,19 @@ class Parser:
 
         for item in content.split():
             if "=" not in item:
-                raise ValueError(f"Metadato malformado: '{item}'")
+                raise ValueError(f"Malformed metadata: '{item}'")
 
             key, val = item.split("=", 1)
             key, val = key.strip().lower(), val.strip()
 
             if key not in allow_keys:
-                raise ValueError(f"Metadato desconocido: '{key}'")
+                raise ValueError(f"Unknown metadata: '{key}'")
 
             if key in ("max_drones", "capacity", "max_link_capacity"):
                 if not val.isdigit() or int(val) < 1:
                     raise ValueError(
-                        f"Valor inválido para '{key}': '{val}' "
-                        f"(debe ser un entero mayor a 1)"
+                        f"Invalid value for '{key}': '{val}' "
+                        f"(must be an integer greater than 1)"
                     )
-            metadata[key] = val
+                metadata[key] = val
         return metadata

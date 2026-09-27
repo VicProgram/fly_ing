@@ -1,429 +1,196 @@
-TODO — Fly-in
+TODO — Fly-in (verificado contra subject v1.4, 27/09/2026)
 
-Leyenda:  [OK] hecho y verificado   [ ] pendiente   [!] fallo encontrado [?] comprobación pendiente
-
-Prioridad: BLOQUEANTE (incumple el subject / crash / resultado inválido)
-           IMPORTANTE (riesgo claro en evaluación)   MENOR / OPCIONAL
+Leyenda:  [OK] hecho y verificado   [ ] pendiente   [!] fallo encontrado
 
 ===========================================================================
-RESUMEN
-===========================================================================
-- El parser y el pathfinding (A* en espacio-tiempo con tabla de reservas)
-  funcionan, y los 10 mapas cumplen los targets de turnos
-  (re-verificado 22/09: 4,4,4 / 8,15,7 / 13,16,26 / challenger 43).
-- Arquitectura real: "prioritized planning" (cada dron planifica su ruta
-  sobre una ReservationTable). NO hay bucle de simulación turno a turno,
-  así que las fases antiguas de "motor de simulación" ya no aplican tal cual.
-- ARREGLADO desde la revisión anterior: el cuelgue con mapa sin camino
-  (punto 4); make install/lint (punto 1bis, con python3.14-venv);
-  flake8 a 0 errores (punto 22); SyntaxError de visualizer.py (34).
-- LO QUE QUEDA EN CALIDAD DE CÓDIGO (para ti, cuando puedas):
-  mypy 6 errores (23), docstrings (24), README (27), y el resto de la
-  FASE 0/2/3 (formato de salida, parser).
-  ARREGLADO también: `make run MAP=...` (punto 1) y el entorno virtual /
-  .gitignore (punto 3) -> ahora todo corre sobre `.venv`, único entorno.
-- Bloqueantes funcionales que quedan: formato de salida (10-11),
-  visual (20, falta integrarlo), capacidad de conexión en hard/02 (5),
-  parser (12-16), README (27).
-
-===========================================================================
-HECHO Y VERIFICADO
-===========================================================================
-PARSER (probado con mapas rotos)
-- [OK] zone=, color=, max_drones=, max_link_capacity= en cualquier orden.
-- [OK] Tipo de zona inválido -> error con línea y causa.
-- [OK] Nombre de hub duplicado; >1 start_hub / >1 end_hub; falta start o end.
-- [OK] Conexión duplicada (a-b y b-a), consigo mismo, o a un hub no definido
-       todavía (forward reference).
-- [OK] nb_drones debe ser la primera línea válida; 0 o no numérico -> error.
-- [OK] max_drones=0 y max_link_capacity=0 -> error.
-- [OK] Nombre con '-' -> error. Coordenadas no enteras -> error.
-- [OK] Comentarios de línea completa y líneas vacías; finales CRLF.
-- [OK] Archivo inexistente / sin argumentos -> mensaje por stderr + exit 1.
-- [OK] Los 10 mapas oficiales cargan.
-
-MODELO Y PATHFINDING
-- [OK] Costes correctos (normal=1, priority=1, restricted=2, blocked
-       inaccesible) y get_move_costs devuelve solo el coste del destino.
-- [OK] find_path ya usa heapq y no tiene los bugs viejos (indentación,
-       NameError, print(queue)).
-- [OK] blocked nunca se pisa; start y end sin límite de capacidad
-       (excepciones que permite el subject VII.2).
-- [OK] Liberar plaza y ocupar en el mismo turno funciona: 0 violaciones de
-       max_drones en los 10 mapas y en 340 mapas aleatorios.
-
-REQUISITOS TRANSVERSALES
-- [OK] Python 3.10+ (usa match y `X | Y`).
-- [OK] Todo son clases (solo main() suelto). Sin librerías de grafos
-       (solo re, sys, heapq). Fichero abierto con `with`.
-- [OK] Makefile: install (crea venv + instala flake8/mypy), debug, clean,
-       lint y lint-strict existen. (Ojo: falta `run`, ver punto 1, y
-       `install` falla en esta máquina, ver punto 1bis.)
-
-TURNOS POR MAPA (salida válida vs target del subject VII.7)
-  easy/01 4 (<=6)     easy/02 4 (<=8)     easy/03 4 (<=6)
-  medium/01 8 (<=12)  medium/02 15 (<=15, justo)   medium/03 7 (<=12)
-  hard/01 13 (<=30)   hard/02 16 (<=35)   hard/03 26 (<=45)
-  challenger 43 (record de referencia: 45)
-  Aviso (22/09): los 10 mapas dan turnos estables entre ejecuciones
-  (hard/02, hard/03 y medium/02 probados x8-x10, md5 idéntico), pero
-  hard/02 Produce una conexión SOBRE su capacidad (punto 5). Re-medir
-  tras arreglar el punto 5 (punto 30).
-
-===========================================================================
-PENDIENTE 
+BLOQUEANTES (incumplen el subject)
 ===========================================================================
 
-=== FASE 0 — Arreglos rápidos que desbloquean `make` ===
-
-- [OK] 1. [BLOQUEANTE] (RESUELTO 22/09) Makefile: `run` y `debug` usaban
-      `$(MAP)` sin definirlo y la referencia iba tras un `#`, así que nunca
-      llegaba a la shell -> `make run` acababa en el usage con Error 1.
-      Arreglado: `MAP ?= maps/easy/01_linear_path.txt` (se sobreescribe con
-      `make run MAP=...`) y `$(PYTHON) $(SCRIPT) $(MAP)` en run y debug.
-      Verificado: `make run` (easy/01, 4 turnos), `make run MAP=medium/01`
-      (8 turnos), `make -n debug` correcto. El Makefile viejo queda
-      comentado arriba del actual, como pediste.
-      `run` ya estaba en .PHONY.
-
-- [OK] 1bis. [BLOQUEANTE] (RESUELTO 22/09) `make install` FALLABA: faltaba
-      `ensurepip` (paquete `python3.14-venv` no instalado), el venv quedaba
-      sin pip y `make lint` daba "venv/bin/flake8: not found".
-      Ya instalado con `sudo apt install python3.14-venv`; el venv se
-      recreó con pip, flake8 7.3.0 y mypy dentro. `make lint` corre de verdad.
-      (Pendiente solo si se monta en otra máquina: repetir ese apt o dejar
-      un mensaje claro en el Makefile.)
-
-- [OK] 2. [BLOQUEANTE] Borrar `__init__.py` de la raíz. Con él, `mypy .`
-      aborta con "Source file found twice under different module names"
-      y `make lint` falla sin analizar nada (el proyecto usa imports
-      absolutos `from models import ...`, no es un paquete).
-
-- [OK] 3. [IMPORTANTE] (RESUELTO 22/09 tarde) .gitignore reescrito:
-      `__pycache__/` (typo corregido), `*.py[cod]`, `.mypy_cache/`,
-      `.pytest_cache/`, `.ruff_cache/`, `.venv/` y `maps.tar.gz`.
-      `git rm -r --cached __pycache__` ejecutado: `git ls-files | grep
-      pycache` -> 0 (los .pyc siguen en disco pero ya ignorados).
-      Además: UN SOLO entorno virtual, `.venv` (antes había `.venv` Y
-      `venv`, y `venv` se había creado a partir del python de `.venv`).
-      `VENV := .venv` en el Makefile, flake8 7.3.0 + mypy 2.3.1
-      instalados en `.venv`, `venv/` borrado, excludes del lint simplificados
-      a `--exclude=$(VENV)`. Verificado: `make run` y `make lint` corren
-      sobre `.venv`, `make -n clean` borra `.venv`.
-
-
-=== FASE 1 — Pathfinding (models.py: find_path / add_path) ===
-
-- [OK] 4. [BLOQUEANTE] (RESUELTO, verificado 22/09) Bucle infinito si el
-      end no es alcanzable: ya no ocurre. Mapa sin ninguna conexión ->
-      "End_hub no alcanzable" + exit 1 (models.py:222-224); igual si el
-      end solo es alcanzable a través de un blocked.
-      Queda menor: el mensaje sale SIN salto de línea y se entremezcla con
-      el buffering del stdout (aparece antes que "Mapa cargado..."); usar
-      `file=sys.stderr` con "\n" (punto 39).
-
-- [OK] 5. [!] [BLOQUEANTE] Se sobrepasa max_link_capacity con zonas restricted.
+- [ ] 5. [!] [BLOQUEANTE] Se sobrepasa max_link_capacity con zonas restricted.
       find_path comprueba la conexión en range(curr_turn, next_turn)
-      (models.py:263-266), pero reservas posteriores (esperas y otras rutas)
-      pueden pisarla sin esa comprobación. Reproductor
-      determinista (fallaba 20/20):
+      (models.py:299-304), pero reservas posteriores (esperas y otras rutas)
+      pueden pisarla sin esa comprobación. Reproductor determinista:
           nb_drones: 4
           start_hub: s 0 0
           hub: h1 1 0 [zone=restricted max_drones=2]
           end_hub: g 2 0
           connection: s-h1 [max_link_capacity=2]
           connection: h1-g [max_link_capacity=1]
-      La propia tabla acaba con 3 reservas en s-h1 (capacidad 2) en el
-      turno 2. En hard/03 pasaba en ~40% de las ejecuciones (conexión
-      bottleneck1-overflow1, capacidad 1, carga 2).
-      EVIDENCIA 22/09 (validador de invariantes tras run(), 6 reps/mapa):
-        maps/hard/02_capacity_hell.txt
-          LINK ['convergence','restricted_tunnel3'] turn 11 occ 2 cap 1
-      El reproductor mínimo de restricted ya NO falla (5/5 limpias), o sea
-      que el check de `range(curr_turn, next_turn)` de models.py:263-266
-      está, pero algo reserva sin haber comprobado ese intervalo (revisar
-      el paso de "espera" models.py:280-289: solo mira el hub de destino
-      del espera, no la conexión que ocupará el turno siguiente).
-      Fix: comprobar TODOS los turnos [curr_turn, next_turn) de la
-      conexión ANTES de aceptar cualquier movimiento (moverse o esperar).
-      Verificar: tras run(), ningún valor de _link_occup / _hub_occup
-      supera la capacidad de su conexión / hub, en los 10 mapas x 6 reps.
+      En hard/02 pasaba en ~40% de las ejecuciones. Fix: comprobar TODOS los
+      turnos [curr_turn, next_turn) de la conexión ANTES de aceptar cualquier
+      movimiento (moverse o esperar). Verificar: tras run(), ningún valor de
+      _link_occup / _hub_occup supera la capacidad en los 10 mapas x 6 reps.
 
-- [ ] 6. [MENOR] (22/09: NO se reproduce, pero ojo) El heap desempata con
-      id(hub) (models.py:236, 276, 288): es una dirección de memoria.
-      8-10 ejecuciones de hard/02, hard/03 y medium/02 dieron md5 idéntico,
-      así que hoy la salida ES determinista. Dejar de usar id() igualmente
-      (contador incremental o índice de hub): es frágil y te lo pueden
-      preguntar. Desempatar también con un criterio de zona (punto 7).
-      Verificar: `for i in $(seq 40); do python3 fly_ing.py MAPA | md5sum;
-      done | sort | uniq -c` -> una sola línea.
+- [ ] 10. [BLOQUEANTE] Stdout debe contener SOLO las líneas de movimientos,
+      una por turno: `D1-roof1 D2-corridorA`. print_avances ya no se llama
+      y las cabeceras "Turno NN:" ya no existen, pero print_simulation_output
+      (models.py:381-418) sigue imprimiendo con print() y el formato no es
+      el correcto (no muestra vuelo, ver punto 11). Info y métricas -> stderr
+      o flag opcional.
 
-- [OK] 7. [!] [IMPORTANTE] La preferencia por zonas `priority` no existe
-      (solo aparece en zone_costs y valid_zones). Subject VII.1/VII.3:
-      coste 1 pero "should be prioritized". Prueba: s->g con dos rutas de
-      igual coste, una por hub priority y otra por hub normal. Con la
-      priority escrita primero en el archivo eligió la normal en 5 de 8
-      ejecuciones; con la normal escrita primero eligió la priority 8 de 8.
-      O sea: depende del orden del archivo y de la memoria, no de la zona.
-      Añadir desempate a coste igual: preferir más zonas priority (segundo
-      componente en la clave del heap). Verificar: elige siempre la priority
-      sin depender del orden del archivo.
+- [ ] 11. [BLOQUEANTE] Faltan los turnos "en vuelo" hacia zonas restricted.
+      print_simulation_output (models.py:381-418) solo imprime el hub de
+      llegada. Subject VII.5: debe salir `D1-s-h1 D4-s-h1` (vuelo) y luego
+      `D1-h1 D4-h1` (llegada). Usar "<origen>-<destino>" con los nombres de
+      hub del mapa, NO "Conn3" (nombre interno, parsing.py:177).
 
-- [OK] 8. [MENOR] Drones que retroceden a `start` para "esperar" (D2-start,
-      D3-start en hard/01 y medium/02): legal pero difícil de justificar en
-      la evaluación. Revisar tras el punto 6; preferir esperar en el sitio a
-      igual coste.
-
-- [ ] 9. [MENOR] get_neightbors recorre TODAS las conexiones en cada
-      expansión (models.py:139-149). Construir un dict de adyacencia en
-      add_connection. Sirve además para contestar a "complejidad / caching /
-      memoria" del subject (VII.1) en el README. Medido: 499 drones 0.13 s;
-      5000 drones ~10 s (con el límite de nb_drones quitado, punto 14).
-
-=== FASE 2 — Formato de salida (subject VII.5) — BLOQUEANTE ===
-
-- [OK] 10. [verificado 22/09] Stdout debe contener SOLO las líneas de
-      movimientos, una por turno:
-      `D1-roof1 D2-corridorA`. Ahora se mezcla con: "Mapa cargado
-      exitosamente..." (print_avances, parsing.py:188-194, llamado en
-      fly_ing.py:16), "--- Iniciando simulación..." (models.py:208),
-      cabeceras "Turno NN:" con salto de línea y línea en blanco
-      (models.py:185), "(Sin movimientos)", "--- TOTAL TURNOS ---"
-      (models.py:186) y una lista de hubs extra al final (fly_ing.py:22-27:
-      llama de nuevo a find_path DESPUÉS de reservar todo -> ruta sin
-      sentido; borrar). Info y métricas -> stderr o flag opcional.
-
-- [OK] 11. Faltan los turnos "en vuelo" hacia zonas restricted:
-      print_simulation_output solo imprime el hub de llegada
-      (models.py:173-176) y el subject pide D<ID>-<connection> mientras el
-      dron está en la conexión. Con el reproductor del punto 5, el turno 1
-      sale "(Sin movimientos)" aunque D1 y D4 están volando hacia h1.
-      Debe salir `D1-s-h1 D4-s-h1` (vuelo) y luego `D1-h1 D4-h1` (llegada).
-      Decidir el nombre de la conexión: usar "<origen>-<destino>" con los
-      nombres de hub del mapa, NO "Conn3" (nombre interno, parsing.py:173).
-
-=== FASE 3 — Parser (subject VII.4) ===
-
-- [OK] 12. [!] [IMPORTANTE] Metadata inválida aceptada en silencio (se usa
-      re.search sin validar el bloque; parsing.py:51-63 y 139-145).
-      Verificado 22/09 con `[zone=restricted max_drones=-1 foo=bar]`:
-      se acepta sin ningún error (max_drones=-1 -> el regex (\d+) no casa
-      y se usa el default 1; foo=bar se ignora):
+- [ ] 12. [!] [BLOQUEANTE] Metadata inválida aceptada en silencio
+      (parsing.py:192-226). Subject VII.4: "must be syntactically valid".
+      Verificado con `[zone=restricted max_drones=-1 foo=bar]`:
         max_drones=-1 / =abc            -> usa 1 sin error
         max_link_capacity=-3 / =abc     -> usa 1 sin error
         [foo=bar]  (clave desconocida)  -> ignorada
         [color=dark red] (dos palabras) -> coge "dark", ignora "red"
-      Subject: capacidades enteras positivas y metadata "syntactically
-      valid". Fix: parsear el bloque [...] completo (tokens clave=valor,
-      claves permitidas según sea zona o conexión, valor entero >= 1) y
-      lanzar ValueError con línea en cualquier otro caso. `]` obligatorio.
+      Fix: parsear el bloque [...] completo (tokens clave=valor, claves
+      permitidas según sea zona o conexión, valor entero >= 1) y lanzar
+      ValueError con línea en cualquier otro caso. `]` obligatorio.
 
-- [OK] 13. [!] [IMPORTANTE] nb_drones (parsing.py:87-97), verificado 22/09:
-      a) el tope `>= 500` (línea 90) contradice "must be able to handle any
-         number of drones": 1000 drones se rechaza. Quitar el tope.
+- [ ] 13. [!] [BLOQUEANTE] nb_drones (parsing.py:95-103). Subject VII.4:
+      "The program must be able to handle any number of drones".
+      a) el tope `>= 500` YA fue quitado (confirmado 27/09). ✅
       b) un segundo `nb_drones:` más abajo se acepta y SOBRESCRIBE
-         (probado: 1 -> 3 drones). Debe ser error.
+         (probado: 1 -> 3 drones). Debe ser error. Pendiente.
 
-- [OK] 14. [!] [IMPORTANTE] Errores del parser por stdout, no stderr
-      (parsing.py:27-31, sin file=sys.stderr; la versión anterior de este
-      TODO lo daba por OK). Formato sugerido: "Error (line N): causa".
+- [ ] 14. [!] [BLOQUEANTE] Errores del parser por stdout, no stderr
+      (parsing.py:27-31). Subject III.1: "handle exceptions gracefully".
+      PARCIAL: parse_file ya usa sys.stderr.write (parsing.py:27-43),
+      pero parse_line lanza ValueError que se captura en fly_ing.py:17-19
+      -> ese except casi nunca se ejecuta porque parse_file hace sys.exit(1)
+      internamente. Ver punto 38.
 
-- [OK] 15. [!] [IMPORTANTE] Traceback con entradas raras (subject III.1: un
-      traceback en evaluación = no funcional). Solo se captura
-      FileNotFoundError (parsing.py:33). VERIFICADO 22/09:
-        - archivo binario/no UTF-8: YA NO traza (UnicodeDecodeError es
-          subclase de ValueError y lo coge fly_ing.py:20 -> "Error en el
-          parseo ..."), pero ese mensaje sale por stdout y sin línea.
-        - ruta a un directorio: TRACEBACK IsADirectoryError (parsing.py:19).
-        - sin permisos: TRACEBACK PermissionError (parsing.py:19).
-      Capturar OSError y UnicodeDecodeError en
-      parse_file y envolver main() con un try/except final.
+- [ ] 16. [!] [BLOQUEANTE] Nombres pasados a minúsculas (parsing.py:78,
+      157-158). Subject VII.4: "Zone names can use any valid characters".
+      Efectos: `Alpha` y `alpha` dan "hub duplicado" (falso error) y la
+      salida imprime nombres distintos a los del mapa (`Start` -> `start`).
 
-- [OK] 16. [!] [IMPORTANTE] Nombres pasados a minúsculas (parsing.py:75,
-      153-154; el TODO viejo lo daba por OK). Efectos: `Alpha` y `alpha`
-      dan "hub duplicado" (falso error) y la salida imprime nombres
-      distintos a los del mapa (`Start` -> `start`). El subject no dice que
-      sea case-insensitive: usar los nombres tal cual.
+- [ ] 20. [BLOQUEANTE] Visual representation (subject VII.1: "must provide
+      visual feedback"). visualizer.py existe y compila, pero nadie lo importa
+      ni lo usa. fly_ing.py no tiene flag --visual. Recomendación: visual
+      por terminal (ANSI + mini-mapa ASCII) que conviva con el formato
+      exacto del punto 10 (flag `--visual` o salida por stderr).
 
-- [OK] 17. [MENOR] Regla "no dos hubs en la misma coordenada"
-      (models.py:116-117): el subject solo exige nombre único y coordenadas
-      enteras. Es una restricción extra que puede rechazar un mapa de
-      evaluación válido -> recomendable quitarla.
-
-- [OK] 18. [MENOR] Mensajes: la conexión duplicada dice "La conexion 'Conn2'
-      ya existe" (nombre interno; decir "g-s duplicada de s-g"); el usage de
-      fly_ing.py:8 dice "python3 -m tu_modulo mapa.txt" (poner
-      "python3 fly_ing.py <map_file>").
-
-- [OK] 19. [MENOR->IMPORTANTE, verificado 22/09] Comentarios en línea
-      (`nb_drones: 1 # x`) dan error: "invalid literal for int(): '1 # x'".
-      El subject dice "Comments start with '#'"; cortar la línea en el
-      primer '#' antes de parsear lo cubre (vale para todas las líneas).
-
-=== FASE 4 — Visual (subject VII.1, obligatorio) ===
-
-- [!] 20. [BLOQUEANTE] (PARCIAL 22/09: el SyntaxError ya está arreglado y
-      visualizer.py compila, pero sigue sin usarse) Valid_List.valid_colors
-      (models.py:15-37) no se usa en ningún print. Nadie importa
-      DroneVisualizer (grep: 0 usos fuera del propio fichero); el subject
-      exige visual OBLIGATORIO. Además tkinter ni está instalado en esta
-      máquina -> riesgo de que tampoco lo esté en la de evaluación.
-      Recomendación: visual por terminal (ANSI + mini-mapa ASCII con las
-      coordenadas x,y) que conviva con el formato exacto del punto 10
-      (flag `--visual` o salida por stderr), y tkinter solo como extra.
-      Contenido mínimo: color= de cada hub aplicado a su nombre, estado por
-      turno (ocupación de hubs, drones en conexiones, entregados/total).
-      Tienes que poder explicar cómo ayuda a entender la simulación.
-
-- [ ] 21. [OPCIONAL] Métricas secundarias (subject VII.6): drones movidos por
-      turno, media de turnos por dron, coste total. Útiles en peer-review.
-
-=== FASE 5 — Calidad de código (subject III.1 y Constraints) ===
-
-- [OK] 22. [BLOQUEANTE] (RESUELTO 22/09) flake8 -> 0 ERRORES.
-      Comando: `venv/bin/flake8 --exclude=venv,.venv .` = 0.
-      Lo único que se tocó fue FORMATO (nada de lógica; los 10 mapas dan
-      los mismos turnos que antes: 4,4,4 / 8,15,7 / 13,16,26 / 43):
-        - models.py: import heapq/sys separados (E401); 9 líneas >79
-          partidas (E501); espacios finales quitados (W291/W293);
-          `\` redundante entre corchetes (E502); indentación de
-          continuación (E128); `,` sin espacio (E231). En find_path se
-          extrajeron a variables locales `prev_cost`, `key`/`best`,
-          `wait_key`/`best` SOLO para acortar líneas: misma expresión.
-        - parsing.py: 2 ternarios partidos (E501).
-        - visualizer.py: SyntaxError de la línea 72 arreglado
-          (`def start((self)` -> `def start(self)`, E999) + E302, E501,
-          W291/W293, W292. El fichero YA compila.
-        - Makefile: FLAKE8_EXCLUDE/MYPY_EXCLUDE ahora excluyen también
-          `.venv` (antes solo `venv`, y `.venv` reventaba con +5000
-          errores de pip).
-      OJO: `make lint` todavía NO pasa porque falla mypy -> punto 23.
-      Si toques código, vuelve a correr flake8 antes de commitar.
-
-- [ ] 23. [BLOQUEANTE] mypy: quedan 6 errores (22/09 tarde, RE-VERIFICADO
-      con `.venv/bin/mypy .` = los 4 ficheros):
+- [ ] 23. [BLOQUEANTE] mypy: quedan 6 errores (subject III.1: "All
+      functions must pass mypy without errors"):
         visualizer.py:83,86  self.drones anotado Dict[str, int] pero se le
-          asigna una tupla (drone_obj, label_obj) -> cambiar la anotación a
-          Dict[str, Tuple[int, int]] (el tipo actual estaba MAL, no es un
-          error de tipado tuyo).
-        models.py:185  clear() SIN `-> None`: el TODO decía esto resuelto
-          pero la línea actual es `def clear(self):` -> OJO, ha vuelto a
-          caer (o nunca se llegó a escribir).
-        models.py:198  Drone(..., self.map.start_hub) -> Optional[Hub].
-        models.py:228  find_path(self.map.start_hub, self.map.end_hub) x2
-          -> lo mismo, dentro de run().
-      El parser ya exige start y end, así que o un
-          `assert self.map.start_hub is not None` o un chequeo con
-          stderr + exit.
-      Con --strict (opcional, recomendado) saldrán más: `frozenset` ->
-      frozenset[str] (models.py:73), `set` -> set[tuple[int,int]] (110),
-      `history: list` -> list[str] (156), `neightbors = []` sin anotar
-      (141), `nuevo_hub: Any` (parsing.py:113, quitar el Any).-
-      Meta: `make lint` y `make lint-strict` en limpio.-µ· 
+          asigna una tupla -> cambiar a Dict[str, Tuple[int, int]]
+        models.py:185  clear() SIN `-> None`
+        models.py:198  Drone(..., self.map.start_hub) -> Optional[Hub]
+        models.py:228  find_path(...) x2 -> lo mismo, dentro de run()
+      El parser ya exige start y end, así que o un assert o un chequeo con
+      stderr + exit.
 
-- [ ] 24. [BLOQUEANTE] Docstrings PEP 257 (recontado 22/09 con ast):
-      0 de 8 clases (Parser, Valid_List, Hub, Connection, Drone, Drone_Map,
-      Solver, ReservationTable) y 2 de 35 funciones/métodos
-      (print_simulation_output y add_path; TODOS los demás se listan:
-      main, parse_file, parse_hub_content, parse_line, print_avances,
-      check_zone, __repr__, get_drone_info, add_hub, add_connection,
-      get_neightbors, hub_available, link_available, reserve_hub,
-      reserve_link, clear, get_drones_in_hub, get_drones_in_con,
-      can_move_hub, can_move_conn, get_move_costs, run, find_path...).
-      Estilo Google o NumPy: qué hace, params, returns, raises.
+- [ ] 24. [BLOQUEANTE] Docstrings PEP 257 (subject III.1: "Include docstrings
+      in functions and classes following PEP 257"). 0 de 8 clases y 2 de 35
+      funciones/métodos tienen docstring. Estilo Google o NumPy.
+
+- [ ] 27. [BLOQUEANTE] README.md en la raíz NO existe (subject VIII:
+      "A README.md file must be provided at the root"). Debe incluir:
+      - Primera línea en cursiva: *This project has been created as part of
+        the 42 curriculum by <login>.*
+      - Description (objetivo + resumen)
+      - Instructions (make install / run / debug / lint / clean)
+      - Resources (referencias + cómo usaste IA)
+      - Algoritmo: A* en espacio-tiempo, tabla de reservas, esperas,
+        restricted (2 turnos), desempate priority, complejidad, caching
+      - Representación visual y cómo ayuda al usuario
+
+===========================================================================
+IMPORTANTE (riesgo en evaluación)
+===========================================================================
 
 - [ ] 25. [IMPORTANTE] Código muerto (te pueden pedir explicar cualquier
       línea): Drone.location/in_transit/turn/has_arrived/get_drone_info
-      (models.py:85-101; los Drone solo se usan por su id), Solver.history y
-      curr_turn (models.py:155-156), get_drones_in_hub, get_drones_in_con,
-      can_move_hub, can_move_conn (models.py:188-198): nadie los llama.
-      Decidir: usarlos (p. ej. Drone guarda su ruta para visual/métricas) o
-      borrarlos.
+      (models.py:111-127), Solver.history y curr_turn (models.py:213-214),
+      get_drones_in_hub, get_drones_in_con, can_move_hub, can_move_conn
+      (models.py:222-232): nadie los llama. Decidir: usarlos o borrarlos.
+
+===========================================================================
+MENOR / OPCIONAL
+===========================================================================
+
+- [ ] 6. [MENOR] El heap desempata con id(hub) (models.py:262, 327, 346):
+      es una dirección de memoria. Hoy la salida ES determinista (verificado
+      x8-x10, md5 idéntico), pero es frágil. Usar contador incremental.
+
+- [ ] 9. [MENOR] get_neighbors recorre TODAS las conexiones en cada expansión
+      (models.py:167-177). Construir un dict de adyacencia en add_connection.
+
+- [ ] 21. [OPCIONAL] Métricas secundarias (subject VII.6): drones movidos
+      por turno, media de turnos por dron, coste total.
 
 - [ ] 26. [OPCIONAL] Nombres: `_reservaion_table`, `get_neightbors`;
-      `Valid_List` / `Drone_Map` (CapWords: ValidList / DroneMap);
-      valid_colors tiene entradas raras/duplicadas (marron, darked,
-      rainbow, purple = violet).
+      `Valid_List` / `Drone_Map` (CapWords: ValidList / DroneMap).
 
-=== FASE 6 — README.md (subject VIII, obligatorio) ===
+- [ ] 29. [OPCIONAL] Mapas propios (el subject avisa de que los de evaluación
+      pueden ser distintos): start unido directo al end, todo restricted,
+      muchos drones (1000+), end inalcanzable, ciclos, capacidades 1 en todo.
 
-- [?] 27. [BLOQUEANTE] No existe README.md en la raíz (solo maps/README.md,
-      que es de los mapas). Todo en inglés. Debe incluir:
-      - Primera línea en cursiva: *This project has been created as part of
-        the 42 curriculum by <login>.*
-      - Description (objetivo + resumen).
-      - Instructions (make install / run / debug / lint / clean, ejemplo
-        con MAP=...).
-      - Resources (referencias clásicas + cómo usaste IA: tareas y partes).
-      - Algoritmo: por qué A*/Dijkstra en espacio-tiempo, tabla de reservas,
-        esperas, restricted (2 turnos), desempate priority, complejidad,
-        caching y memoria; limitaciones (prioritized planning no garantiza
-        el óptimo global).
-      - Representación visual y cómo ayuda al usuario.
+- [ ] 31. [OPCIONAL] Poder explicar sin mirar el código: parser,
+      ReservationTable, find_path (incluyendo restricted y priority),
+      formato de salida y visual.
 
-=== FASE 7 — Verificación final ===
+- [ ] 36. [MENOR] fly_ing.py:8 usage: dice "python3 -m fly_ing <mapa.txt>"
+      -> poner "python3 fly_ing.py <map_file>".
 
-- [ ] 29. Mapas propios (el subject avisa de que los de evaluación pueden
-      ser distintos): start unido directo al end, todo restricted, muchos
-      drones (1000+), end inalcanzable, ciclos, capacidades 1 en todo.
-      (No necesario)
+- [ ] 37. [MENOR] fly_ing.py:14-19 tiene código comentado de pruebas.
+      Borrar (afecta al punto 10).
 
-- [ ] 31. Poder explicar sin mirar el código: parser, ReservationTable,
-      find_path (incluyendo restricted y priority), formato de salida y
-      visual. Te pueden pedir una modificación pequeña en vivo.
-
-=== BONUS (solo si todo lo anterior está sólido) ===
-
-- [OK] 32. "Perfectamente" = igualar o batir los targets de todos los mapas
-      (ya se cumple en las ejecuciones válidas) y challenger < 45 turnos
-      (ahora 43). Confirmarlo tras el punto 30; no empezarlo antes.
-      (Comprobar, en principio pasan todos)
-===========================================================================
-NUEVO 22/09/2026 (cosas que aparecieron en la re-verificación)
-===========================================================================
-- [?] 33. [BLOQUEANTE] README.md en la raíz NO existe (verificado 22/09;
-      solo hay maps/README.md). Es el punto 27, confirmado hoy.
-
-- [!] 34. [PARCIAL] (es el punto 20) visualizer.py: el SyntaxError de la
-      línea 72 YA está arreglado (compila), pero nadie lo importa y falta
-      el visual real.
-
-- [OK] 35. (es el punto 1bis, RESUELTO) `make install` ya funciona tras
-      instalar python3.14-venv; `make lint` corre flake8 y mypy.
-
-- [ ] 36. [MENOR] (es el punto 18) fly_ing.py usage: dice
-      "python3 -m tu_modulo mapa.txt" (fly_ing.py:8) -> poner
-      "python3 fly_ing.py <map_file>".
-
-- [ ] 37. [MENOR] fly_ing.py:28-33 tiene código comentado de pruebas y
-      fly_ing.py:17-18 llama a print_avances() bajo el comentario "# PRUEBAS".
-      Borrar ambos (afecta al punto 10).
-
-- [ ] 38. [MENOR] fly_ing.py:20-22 captura ValueError del parseo, pero
+- [ ] 38. [MENOR] fly_ing.py:17-19 captura ValueError del parseo, pero
       parse_file ya hace sys.exit(1) internamente -> ese except casi nunca
       se ejecuta. Unificar: o parse_file propaga, o main() no finge que
       captura.
 
-- [ ] 39. [MENOR] "End_hub no alcanzable" (models.py:223) no lleva "\n" y
-      el stderr puede llegar ANTES que el stdout buffering (se ve un
-      desorden al ejecutar). Arreglar con newline.
+- [ ] 39. [MENOR] "End_hub no alcanzable" (models.py:250) no lleva "\n" y
+      el stderr puede llegar ANTES que el stdout buffering.
 
-- [ ] 40. [MENOR] `curr_cost > 700` en find_path (models.py:245) es un
-      mágico sin explicar: si un mapa necesita más de 700 turnos de coste,
-      la búsqueda muere en silencio y da "End_hub no alcanzable" falso.
-      Explicarlo en docstring o hacerlo un parámetro con nombre.
+- [ ] 40. [MENOR] `curr_cost > 700` en find_path (models.py:273) es un
+      mágico sin explicar. Explicarlo en docstring o hacerlo un parámetro.
 
-- [ ] 41. [MENOR] `wait_cost = curr_cost + 1.0001` (models.py:283): el
-      0.0001 es un hack de desempate (esperar cuesta "casi" 1). Funciona,
-      pero es frágil y hay que poder explicarlo; mejor desempate explícito
-      en la tupla del heap (y ahí meterías el criterio priority del punto 7).
+- [ ] 41. [MENOR] `wait_cost = curr_cost + 1.0001` (models.py:336): el
+      0.0001 es un hack de desempate. Mejor desempate explícito en la tupla
+      del heap.
 
-- [ ] 42. [MENOR] (confirmación del punto 17) `used_coords` / "no dos hubs
-      en la misma coordenada" (models.py:116-117) rechazó un mapa de prueba
-      legítimo (hub en 0,0 igual que start). Restricción extra no pedida por
-      el subject -> probablemente quitarla.
+- [ ] 42. [MENOR] `used_coords` / "no dos hubs en la misma coordenada"
+      (models.py:136, 151): restricción extra no pedida por el subject.
 
-- [ ] 43. [MENOR] (confirmación del punto 16) Nombres a minúsculas
-      (parsing.py:75) verificado 22/09: un hub "Alpha" se imprime como
-      "alpha" en la salida.
+===========================================================================
+HECHO Y VERIFICADO (subject v1.4)
+===========================================================================
 
+PARSER (subject VII.4):
+- [OK] zone=, color=, max_drones=, max_link_capacity= en cualquier orden.
+- [OK] Tipo de zona inválido -> error con línea y causa.
+- [OK] Nombre de hub duplicado; >1 start_hub / >1 end_hub; falta start o end.
+- [OK] Conexión duplicada (a-b y b-a), consigo mismo, o forward reference.
+- [OK] nb_drones debe ser la primera línea válida; 0 o no numérico -> error.
+- [OK] max_drones=0 y max_link_capacity=0 -> error.
+- [OK] Nombre con '-' -> error. Coordenadas no enteras -> error.
+- [OK] Comentarios de línea completa y líneas vacías; finales CRLF.
+- [OK] Archivo inexistente / sin argumentos -> mensaje por stderr + exit 1.
+- [OK] Los 10 mapas oficiales cargan.
+- [OK] IsADirectoryError y PermissionError capturados (parsing.py:31).
+
+MODELO Y PATHFINDING (subject VII.1-VII.3):
+- [OK] Costes correctos (normal=1, priority=1, restricted=2, blocked inaccesible).
+- [OK] find_path usa heapq y no tiene los bugs viejos.
+- [OK] blocked nunca se pisa; start y end sin límite de capacidad.
+- [OK] Liberar plaza y ocupar en el mismo turno funciona: 0 violaciones de
+      max_drones en los 10 mapas y en 340 mapas aleatorios.
+- [OK] Bonus priority existe (models.py:312-316).
+
+REQUISITOS TRANSVERSALES (subject III.1-III.3, V):
+- [OK] Python 3.10+ (usa match y `X | Y`).
+- [OK] Todo son clases (solo main() suelto). Sin librerías de grafos.
+- [OK] Makefile: install, run, debug, clean, lint, lint-strict existen.
+- [OK] flake8 -> 0 ERRORES.
+- [OK] .gitignore correcto.
+
+TURNOS POR MAPA (subject VII.7) — TODOS CUMPLIDOS:
+  easy/01 4 (<=6)     easy/02 4 (<=8)     easy/03 4 (<=6)
+  medium/01 8 (<=12)  medium/02 15 (<=15, justo)   medium/03 7 (<=12)
+  hard/01 13 (<=30)   hard/02 16 (<=35)   hard/03 26 (<=45)
+  challenger 43 (record de referencia: 45)
+  Los 10 mapas dan turnos estables entre ejecuciones (md5 idéntico).
+
+BONUS (subject IX):
+- [OK] Todos los targets cumplidos. Challenger 43 < 45.

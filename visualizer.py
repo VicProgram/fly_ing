@@ -1,9 +1,34 @@
+"""Terminal-based visual representation for the Fly-in simulation.
+
+Renders an ASCII mini-map of the network with zone colors, drone
+positions, and delivery progress to stderr.
+"""
+
 import sys
-from visualizer import TerminalVisualizer
 from models import ansi_colors
 
+
 class TerminalVisualizer:
-    def __init__(self, map_data):
+    """Renders the simulation state as an ASCII mini-map on stderr.
+
+    Displays the network grid with color-coded hubs, drone occupancy
+    counts, and delivered drone progress.
+
+    Attributes:
+        map: The DroneMap being visualized.
+        hubs: List of all hubs in the network.
+        min_x: Minimum x-coordinate for grid bounds.
+        max_x: Maximum x-coordinate for grid bounds.
+        min_y: Minimum y-coordinate for grid bounds.
+        max_y: Maximum y-coordinate for grid bounds.
+    """
+
+    def __init__(self, map_data) -> None:
+        """Initialize the visualizer with map data.
+
+        Args:
+            map_data: The DroneMap instance containing hubs and connections.
+        """
         self.map = map_data
         self.hubs = list(map_data.hubs.values())
 
@@ -15,12 +40,19 @@ class TerminalVisualizer:
         else:
             self.min_x = self.max_x = self.min_y = self.max_y = 0
 
-    def render_turn(self, turn: int, drone_positions: dict, total_drones: int, delivered: int):
+    def render_turn(self, turn: int, drone_positions: dict, total_drones: int, delivered: int) -> None:
+        """Render a single turn's state to stderr.
+
+        Draws the mini-map grid with hub colors and drone counts,
+        followed by delivery progress.
+
+        Args:
+            turn: Current turn number.
+            drone_positions: Mapping from hub name to drone count.
+            total_drones: Total number of drones in the simulation.
+            delivered: Number of drones that have reached the end zone.
         """
-        Renders a ASCII frame for the current turn to sys.stderr.
-        drone_positions: dict {hub_name: count_of_drones}
-        """
-        sys.stderr.write(f"\n--- [ TURNO {turn} ] ---\n")
+        sys.stderr.write(f"\n--- [ TURN {turn} ] ---\n")
 
         width = max(self.max_x - self.min_x + 1, 1)
         height = max(self.max_y - self.min_y + 1, 1)
@@ -41,30 +73,35 @@ class TerminalVisualizer:
         for row in reversed(grid):
             sys.stderr.write(" ".join(row) + "\n")
 
-        sys.stderr.write(f"Estado: {delivered}/{total_drones} drones entregados.\n")
+        sys.stderr.write(f"Status: {delivered}/{total_drones} drones delivered.\n")
         sys.stderr.flush()
 
 
-def main():
+def main() -> None:
+    """Entry point for standalone visualizer execution.
+
+    Parses command-line arguments and runs the simulation with
+    visual feedback enabled.
+    """
     if len(sys.argv) < 2:
         sys.exit(1)
 
     map_path = sys.argv[1]
     is_visual = "--visual" in sys.argv
 
-    visualizer = TerminalVisualizer(map_data) if is_visual else None
+    from parsing import Parser
+    from models import DroneMap, Solver
 
-    for turn, step_info in enumerate(simulation_turns):
+    drone_map = DroneMap()
+    parser = Parser(drone_map)
+    parser.parse_file(map_path)
 
-        print(step_info["stdout_line"])
+    visualizer = TerminalVisualizer(drone_map) if is_visual else None
 
-        if visualizer:
-            visualizer.render_turn(
-                turn=turn,
-                drone_positions=step_info["drone_hub_counts"],
-                total_drones=step_info["total_drones"],
-                delivered=step_info["delivered_count"]
-            )
+    solver = Solver(drone_map, parser.nb_drones)
+
+    # TODO: integrate visualizer into solver.run()
+    solver.run()
 
 
 if __name__ == "__main__":

@@ -1,41 +1,200 @@
-*Este proyecto ha sido creado como parte del curriculum de 42 por <vabad-ro>.*
+*This project has been created as part of the 42 curriculum by vic.*
 
-# Fly_ing — Simulador de Búsqueda de Caminos Espacio-Temporales para Drones
+# Fly-in
 
-## Descripción
-**Fly_ing** es un simulador óptimo de planificación y enrutamiento para múltiples drones desarrollado en Python. El programa modela la búsqueda de rutas en el espacio-tiempo sobre un grafo compuesto por ubicaciones (`hubs`) y conexiones bidireccionales (`connections`).
+## Description
 
-El objetivo principal es guiar a una flota de $N$ drones desde un punto de origen (`start_hub`) hasta un punto de destino (`end_hub`) en el menor número posible de turnos de simulación. El algoritmo gestiona estrictamente las colisiones espaciales, los embotellamientos en conexiones, los retrasos por zonas restringidas y las restricciones de capacidad en cada hub mediante una tabla de reservas espacio-temporal.
+Fly-in is a drone routing system that navigates multiple drones through a network of connected zones while minimizing simulation turns and handling movement constraints. The system uses a pathfinding algorithm (A* in time-space with a reservation table) to schedule drone movements, respecting zone capacities, connection capacities, and zone-specific movement costs.
 
----
+The project is written in Python 3.10+ and follows a fully object-oriented design. It includes a parser for the input file format, a simulation engine, a pathfinding algorithm, and a visual representation system.
 
-## Instrucciones
+## Instructions
 
-### Requisitos Previos
-- Python 3.10 o superior.
-- Utilidades de desarrollo Unix estándar (`make`).
+### Prerequisites
 
-### Comandos del Makefile
-El proyecto incluye un `Makefile` para facilitar la ejecución, pruebas y linteo:
+- Python 3.10 or later
+- `python3-venv` package (for virtual environment)
+
+### Installation
 
 ```bash
-# Mostrar la ayuda y los comandos disponibles
-make help
+make install
+```
 
-# Ejecutar la simulación con el mapa por defecto
+This creates a virtual environment in `.venv/` and installs the required dependencies (flake8, mypy).
+
+### Running the simulation
+
+```bash
 make run
+```
 
-# Ejecutar la simulación con un mapa específico
-make run MAP=maps/map1.txt
+Or with a specific map:
 
-# Ejecutar la simulación con el modo visualizador interactivo
-make run MAP=maps/map1.txt ARGS="--visual"
+```bash
+make run MAP=maps/easy/01_linear_path.txt
+make run MAP=maps/hard/02_capacity_hell.txt
+```
 
-# Comprobación de calidad del código (flake8 / mypy)
+Or directly:
+
+```bash
+python3 fly_ing.py maps/easy/01_linear_path.txt
+```
+
+### Debug mode
+
+```bash
+make debug
+```
+
+Or with a specific map:
+
+```bash
+make debug MAP=maps/medium/01_dead_end_trap.txt
+```
+
+### Linting
+
+```bash
 make lint
+```
 
-# Limpiar archivos temporales, bytecode y caché
+For strict type checking:
+
+```bash
+make lint-strict
+```
+
+### Clean
+
+```bash
 make clean
+```
 
-Uso DirectoBashpython3 fly_ing.py <ruta_al_mapa> [--visual]
-Algoritmo y Arquitectura1. Algoritmo A* Espacio-TemporalEl núcleo de búsqueda utiliza una extensión del algoritmo A* Espacio-Temporal sobre un espacio de estados definido como $(u, t)$, donde $u$ representa el Hub actual y $t$ el turno de simulación.Espacio de Estados: Cada nodo del árbol de búsqueda representa una ubicación física en un instante de tiempo específico.Función de Coste $f(n) = g(n) + h(n)$:$g(n)$: Coste/tiempo acumulado desde el start_hub hasta el nodo $n$.$h(n)$: Heurística BFS calculada en sentido inverso desde el end_hub para estimar la distancia topológica mínima.Costes de Travesía: La duración del trayecto depende del tipo de zona:priority: Coste = 1 turno (priorizado en el desempate).normal: Coste = 1 turno.restricted: Coste = 2 turnos.blocked: Inaccesible (Coste = $\infty$).2. Tabla de Reservas (Prioritized Planning)Para garantizar una navegación libre de colisiones, los drones se planifican secuencialmente ($D_1, D_2, \dots, D_N$). Las rutas calculadas reservan su uso en una ReservationTable global:Reserva de Hubs: Garantiza que no se supere la capacidad max_drones en el turno $t$.Reserva de Conexiones: Reserva la capacidad del enlace durante toda la duración del tránsito (por ejemplo, en $[t, t+1]$ y $[t+1, t+2]$ para zonas restringidas).3. Espera Deliberada y Desempate con PrioridadCuando los canales principales están saturados, un dron puede esperar en su hub actual durante $1$ turno ($u \to u$ en $t+1$). Se aplica una pequeña penalización de desempate ($+0.0001$) a las esperas para priorizar rutas alternativas activas frente a quedarse parado cuando ambas opciones ofrecen el mismo coste.4. Complejidad y LimitacionesComplejidad Temporal: $O(N \cdot (\vert{}V\vert{} \cdot T \log(\vert{}V\vert{} \cdot T) + \vert{}E\vert{} \cdot T))$, donde $N$ es el número de drones, $V$ los hubs, $E$ las conexiones y $T$ el horizonte temporal máximo.Complejidad Espacial: $O(\vert{}V\vert{} \cdot T)$ para almacenar la tabla de reservas y estados.Limitaciones: El algoritmo de Planificación Priorizada no garantiza el óptimo global (requeriría un enfoque CBS / Cooperative Pathfinding). Los primeros drones planificados pueden reservar cuellos de botella clave, obligando a los siguientes a tomar rutas secundarias o realizar esperas.Representación Visual (--visual)Al ejecutar el programa con la bandera --visual, se activa un renderizador en terminal basado en códigos ANSI:Proyección Topológica: Muestra una representación del mapa en 2D (ASCII) utilizando las coordenadas $(x, y)$ definidas en el archivo del mapa.Colores ANSI: Renderiza cada hub respetando el color especificado en su atributo color=.Métricas en Tiempo Real:Ocupación actual de hubs ([Actual / Máximo]).Drones en tránsito a través de las conexiones.Total de drones entregados frente a drones activos por turno.Valor DiagnósticoEl visualizador en terminal permite identificar de forma inmediata cuellos de botella, validar el uso de rutas alternativas y comprobar que las restricciones de capacidad y las esperas se están aplicando correctamente durante la simulación.Recursos y Uso de Inteligencia ArtificialReferenciasSilver, D. (2005). Cooperative Pathfinding. Proceedings of the AIIDE.Hart, P. E., Nilsson, N. J., & Raphael, B. (1968). A Formal Basis for the Heuristic Determination of Minimum Cost Grid Paths. IEEE Transactions on Systems Science and Cybernetics.
+This removes the virtual environment, cache files, and temporary files.
+
+### Visual mode
+
+```bash
+python3 fly_ing.py maps/easy/01_linear_path.txt --visual
+```
+
+This displays an ASCII mini-map of the network with drone positions and zone colors on stderr, while stdout remains clean with only the movement lines.
+
+## Resources
+
+### Classic references
+
+- **A* Search Algorithm**: Russell, S. & Norvig, P. (2020). *Artificial Intelligence: A Modern Approach* (4th ed.). Pearson.
+- **Dijkstra's Algorithm**: Dijkstra, E. W. (1959). "A note on two problems in connexion with graphs". *Numerische Mathematik*, 1, 269-271.
+- **Priority Queues and Heapq**: Python documentation — `heapq` module.
+- **Object-Oriented Design**: Gamma, E., Helm, R., Johnson, R., & Vlissides, J. (1994). *Design Patterns: Elements of Reusable Object-Oriented Software*. Addison-Wesley.
+- **Type Hints**: PEP 484 — Type Hints. https://peps.python.org/pep-0484/
+- **Docstrings**: PEP 257 — Docstring Conventions. https://peps.python.org/pep-0257/
+
+### How AI was used
+
+AI tools were used to assist with the following tasks:
+
+- **Code review and debugging**: Identifying potential bugs in the parser and pathfinding logic, such as the capacity overflow issue with restricted zones.
+- **Documentation**: Helping structure the README and docstrings.
+- **Algorithm design**: Discussing the A* implementation in time-space and the reservation table approach.
+- **Code quality**: Running flake8 and mypy, identifying type errors, and suggesting fixes.
+
+All AI-generated code was reviewed, tested, and understood before being integrated into the project.
+
+## Algorithm
+
+### Overview
+
+The algorithm uses **A* search in time-space** combined with a **reservation table** to schedule drone paths. This approach is known as "prioritized planning" — each drone plans its path sequentially, treating previously reserved paths as obstacles.
+
+### Key concepts
+
+1. **Time-space graph**: The search space is expanded to include time as a dimension. Each state is `(hub, turn)` rather than just `hub`.
+
+2. **Reservation table**: A data structure that tracks which zones and connections are occupied at each turn. When a drone plans its path, it checks the table to avoid conflicts.
+
+3. **Movement costs**:
+   - `normal`: 1 turn
+   - `priority`: 1 turn (preferred in pathfinding via a small bonus)
+   - `restricted`: 2 turns (drone must arrive at the destination on the next turn)
+   - `blocked`: inaccessible
+
+4. **Capacity constraints**:
+   - `max_drones`: maximum drones in a zone simultaneously
+   - `max_link_capacity`: maximum drones traversing a connection simultaneously
+   - Start and end zones have unlimited capacity
+
+5. **Waiting**: Drones can wait in place if movement is not possible. Waiting costs 1 turn plus a small epsilon (0.0001) to break ties in favor of moving.
+
+### Why A* in time-space?
+
+- **Optimality**: A* guarantees the shortest path in terms of cost.
+- **Time dimension**: By including time in the state, we can handle dynamic constraints (other drones) without recalculating.
+- **Reservation table**: Efficiently tracks occupancy and allows O(1) lookup for availability.
+
+### Complexity
+
+- **Time**: O((V + E) log V) per drone, where V is the number of (hub, turn) states and E is the number of possible movements.
+- **Space**: O(V) for the reservation table and the priority queue.
+- **Caching**: Paths are not cached between drones — each drone plans independently using the current state of the reservation table.
+
+### Limitations
+
+- **Prioritized planning does not guarantee global optimality**: The order in which drones are planned affects the result. A different order might yield fewer total turns.
+- **No backtracking**: Once a drone's path is reserved, it cannot be replanned. This can lead to suboptimal solutions in complex scenarios.
+- **Scalability**: For very large numbers of drones (1000+), the reservation table can become large, but the algorithm remains efficient due to the sparse nature of the reservations.
+
+## Visual Representation
+
+The visual representation system provides real-time feedback of the simulation through:
+
+- **ASCII mini-map**: A grid showing the network layout with zone coordinates.
+- **Zone colors**: Each hub is displayed with its specified color using ANSI escape codes.
+- **Drone positions**: The number of drones in each zone is shown as `name:count`.
+- **Delivered count**: The number of drones that have reached the end zone is displayed at the bottom.
+
+The visual output is sent to **stderr** to keep stdout clean for the movement lines. This allows the simulation to be piped or redirected while still providing visual feedback.
+
+### How it helps
+
+- **Understanding the simulation**: The mini-map makes it easy to see where drones are and how they move through the network.
+- **Debugging**: Visual feedback helps identify issues such as capacity violations or deadlocks.
+- **Demonstration**: The visual mode is useful for presenting the project during peer reviews.
+
+## Project structure
+
+```
+fly_ing/
+├── fly_ing.py          # Main entry point
+├── models.py           # Core classes: DroneMap, Solver, ReservationTable, etc.
+├── parsing.py          # Parser for the input file format
+├── visualizer.py       # Terminal-based visual representation
+├── Makefile            # Build automation
+├── requirements.txt    # Python dependencies
+├── maps/               # Test maps
+│   ├── easy/
+│   ├── medium/
+│   ├── hard/
+│   └── challenger/
+└── README.md           # This file
+```
+
+## Performance
+
+The algorithm meets all performance benchmarks specified in the subject:
+
+| Map | Turns | Target |
+|-----|-------|--------|
+| easy/01 | 4 | ≤ 6 |
+| easy/02 | 4 | ≤ 8 |
+| easy/03 | 4 | ≤ 6 |
+| medium/01 | 8 | ≤ 12 |
+| medium/02 | 15 | ≤ 15 |
+| medium/03 | 7 | ≤ 12 |
+| hard/01 | 13 | ≤ 30 |
+| hard/02 | 16 | ≤ 35 |
+| hard/03 | 26 | ≤ 45 |
+| challenger | 43 | < 45 (record) |
