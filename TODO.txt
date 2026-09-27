@@ -21,29 +21,31 @@ BLOQUEANTES (incumplen el subject)
       movimiento (moverse o esperar). Verificar: tras run(), ningún valor de
       _link_occup / _hub_occup supera la capacidad en los 10 mapas x 6 reps.
 
-- [ ] 10. [BLOQUEANTE] Stdout debe contener SOLO las líneas de movimientos,
-      una por turno: `D1-roof1 D2-corridorA`. print_avances ya no se llama
-      y las cabeceras "Turno NN:" ya no existen, pero print_simulation_output
-      (models.py:381-418) sigue imprimiendo con print() y el formato no es
-      el correcto (no muestra vuelo, ver punto 11). Info y métricas -> stderr
-      o flag opcional.
+- [OK] 10. [BLOQUEANTE] Stdout contiene SOLO las líneas de movimientos,
+      una por turno: `D1-roof1 D2-corridorA`. print_avances ya no se llama,
+      las cabeceras "Turno NN:" ya no existen, y print_simulation_output
+      (models.py:645-690) imprime solo líneas de movimiento con print().
+      Verificado: el formato es correcto para zonas normales y restricted.
 
-- [ ] 11. [BLOQUEANTE] Faltan los turnos "en vuelo" hacia zonas restricted.
-      print_simulation_output (models.py:381-418) solo imprime el hub de
-      llegada. Subject VII.5: debe salir `D1-s-h1 D4-s-h1` (vuelo) y luego
-      `D1-h1 D4-h1` (llegada). Usar "<origen>-<destino>" con los nombres de
-      hub del mapa, NO "Conn3" (nombre interno, parsing.py:177).
+- [OK] 11. [BLOQUEANTE] Los turnos "en vuelo" hacia zonas restricted ya se
+      muestran. print_simulation_output (models.py:667-673) imprime
+      `D1-s-h1` (vuelo) y luego `D1-h1` (llegada). Usa "<origen>-<destino>"
+      con los nombres de hub del mapa, NO "Conn3". Verificado.
 
 - [ ] 12. [!] [BLOQUEANTE] Metadata inválida aceptada en silencio
-      (parsing.py:192-226). Subject VII.4: "must be syntactically valid".
-      Verificado con `[zone=restricted max_drones=-1 foo=bar]`:
-        max_drones=-1 / =abc            -> usa 1 sin error
-        max_link_capacity=-3 / =abc     -> usa 1 sin error
-        [foo=bar]  (clave desconocida)  -> ignorada
-        [color=dark red] (dos palabras) -> coge "dark", ignora "red"
-      Fix: parsear el bloque [...] completo (tokens clave=valor, claves
-      permitidas según sea zona o conexión, valor entero >= 1) y lanzar
-      ValueError con línea en cualquier otro caso. `]` obligatorio.
+      (parsing.py:252-302). Subject VII.4: "must be syntactically valid".
+      PARCIAL: ya valida estructura de brackets, tokens con '=', claves
+      desconocidas, y capacidades enteras positivas.
+      FALTA para mañana con compis:
+        - [color=dark red] (dos palabras) -> coge "dark", ignora "red"
+          Subject VI: "Accepted values for color are any valid single-word
+          strings". Fix: validar que color sea UNA sola palabra (sin
+          espacios). Si tiene espacios -> ValueError.
+        - Verificar que no se acepten keys vacías o values vacíos.
+      Ya verificado como OK:
+        max_drones=-1 / =abc            -> error ✅
+        max_link_capacity=-3 / =abc     -> error ✅
+        [foo=bar]  (clave desconocida)  -> error ✅
 
 - [ ] 13. [!] [BLOQUEANTE] nb_drones (parsing.py:95-103). Subject VII.4:
       "The program must be able to handle any number of drones".
