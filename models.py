@@ -463,7 +463,7 @@ class Solver:
         """Calculate the movement cost to enter a destination zone.
 
         Args:
-            from_hub: The originating hub (unused, kept for signature compatibility).
+            from_hub: The originating hub (unused, kept for signature comp).
             to_hub: The destination hub.
             conn: The connection being traversed (unused).
 
