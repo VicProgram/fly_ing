@@ -1,9 +1,3 @@
-"""Terminal-based visual representation for the Fly-in simulation.
-
-Renders an ASCII mini-map of the network with zone colors, drone
-positions, and delivery progress to stderr.
-"""
-
 import sys
 from models import ansi_colors
 

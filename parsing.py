@@ -1,9 +1,3 @@
-"""Parser for the Fly-in drone network map file format.
-
-Reads and validates map files defining zones, connections, and drone counts,
-constructing a DroneMap instance for the solver.
-"""
-
 import sys
 import re
 from typing import Any, Tuple

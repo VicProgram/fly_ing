@@ -1,9 +1,3 @@
-"""Core models for the Fly-in drone routing system.
-
-Contains the data structures and algorithms for drone pathfinding,
-including zones, connections, drones, and the reservation table.
-"""
-
 from typing import Dict, List, Optional
 import heapq
 import sys

@@ -1,8 +1,3 @@
-"""Main entry point for the Fly-in drone routing simulation.
-
-Parses command-line arguments, loads the map file, and runs the solver.
-"""
-
 from parsing import Parser
 from models import Solver, DroneMap
 import sys

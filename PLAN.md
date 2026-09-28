@@ -73,7 +73,7 @@ if line_stripped.startswith("nb_drones:"):
 - Mapa con error en línea 5 → mensaje por stderr con "Error (line 5): ..."
 - Sin traceback -->
 
----
+<!-- ---
 
 ## FASE 2 — Bug de capacidad (punto 5)
 
@@ -105,7 +105,7 @@ if line_stripped.startswith("nb_drones:"):
 - Los 10 mapas x 6 reps sin violaciones de capacidad
 - `hard/02` ya no produce conexiones sobre capacidad
 
----
+--- -->
 
 ## FASE 3 — Formato de salida (puntos 10, 11, 37)
 
