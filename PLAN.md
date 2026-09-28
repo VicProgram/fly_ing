@@ -1,15 +1,10 @@
 # PLAN DE RESOLUCIÓN — Fly-in
 
-Documento de referencia para completar todos los puntos pendientes del TODO.
-Tiempo estimado total: 2-3 días de trabajo.
+<!-- ## FASE 1 — Parser (desbloqueo rápido)
 
----
+### Punto 16 — Quitar `.lower()` de nombres -->
 
-## FASE 1 — Parser (desbloqueo rápido)
-
-### Punto 16 — Quitar `.lower()` de nombres
-
-**Archivo:** `parsing.py`
+<!-- **Archivo:** `parsing.py`
 
 **Pasos:**
 1. Línea 78: cambiar `name = name.strip().lower()` → `name = name.strip()`
@@ -76,7 +71,7 @@ if line_stripped.startswith("nb_drones:"):
 
 **Verificación:**
 - Mapa con error en línea 5 → mensaje por stderr con "Error (line 5): ..."
-- Sin traceback
+- Sin traceback -->
 
 ---
 

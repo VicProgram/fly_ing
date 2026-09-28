@@ -58,37 +58,31 @@ class Parser:
                     try:
                         self.parse_line(clean_line, line_num)
                     except Exception as e:
-                        sys.stderr.write(
-                            f"Error on line {line_num}: {e}\n"
+                        raise ValueError(
+                            f"Line {line_num}: {e}"
                         )
-                        sys.exit(1)
+
         except (FileNotFoundError, IsADirectoryError, PermissionError) as e:
-            sys.stderr.write(f"Error opening file '{map_path}': {e}\n")
-            sys.exit(1)
+            raise ValueError(f"Error opening file '{map_path}': {e}")
 
         except UnicodeDecodeError:
-            sys.stderr.write(
-                f"Error: File '{map_path}' is not valid UTF-8.\n"
+            raise ValueError(
+                f"Error: File '{map_path}' is not valid UTF-8."
             )
-            sys.exit(1)
 
         except OSError as e:
-            sys.stderr.write(f"I/O error on '{map_path}': {e}\n")
-            sys.exit(1)
+            raise ValueError(f"I/O error on '{map_path}': {e}")
 
-        except FileNotFoundError:
-            sys.stderr.write(
-                f"Error: File '{map_path}' does not exist.\n"
-            )
-            sys.exit(1)
+        # except FileNotFoundError:
+        #     raise ValueError(
+        #         f"Error: File '{map_path}' does not exist."
+        #     )
 
         if self.map.start_hub is None:
-            sys.stderr.write("Error: map has no start_hub.")
-            sys.exit(1)
+            raise ValueError("Error: map has no start_hub.")
 
         if self.map.end_hub is None:
-            sys.stderr.write("Error: map has no end_hub.\n")
-            sys.exit(1)
+            raise ValueError("Error: map has no end_hub.")
 
     def parse_hub_content(
         self, content: str, allow_keys: set = {"color", "zone", "max_drones"}
@@ -123,7 +117,7 @@ class Parser:
             raise ValueError(f"Invalid hub format: '{content}'")
 
         name, x_str, y_str = parts
-        name = name.strip().lower()
+        name = name.strip()
 
         if "-" in name:
             raise ValueError(
@@ -154,6 +148,10 @@ class Parser:
 
         if line_stripped.startswith("nb_drones:"):
             try:
+                if self.drones_parsed:
+                    raise ValueError(
+                        "Duplicate 'nb_drones:' definition found."
+                    )
                 self.nb_drones = int(line_stripped.split(":")[1].strip())
                 if self.nb_drones <= 0:
                     raise ValueError(
@@ -214,8 +212,8 @@ class Parser:
                     raise ValueError("Malformed connection.")
 
                 zone_1, zone_2 = content_clean.split("-", 1)
-                zone_1 = zone_1.strip().lower()
-                zone_2 = zone_2.strip().lower()
+                zone_1 = zone_1.strip()
+                zone_2 = zone_2.strip()
 
                 first_hub = self.map.hubs.get(zone_1)
                 second_hub = self.map.hubs.get(zone_2)
@@ -250,13 +248,12 @@ class Parser:
             )
 
     def parse_metadata(
-            self, line:  str, allow_keys: set[str] | None = None
-            ) -> dict[str, str]:
+        self, line: str, allow_keys: set[str] | None = None
+    ) -> dict[str, str]:
         """Parse bracket-enclosed metadata from a line.
 
         Extracts key=value pairs from [...] blocks, validating keys
-        against the allowed set and ensuring capacity values are
-        positive integers.
+        against the allowed set and ensuring values are strictly valid.
 
         Args:
             line: The line content potentially containing metadata.
@@ -268,35 +265,55 @@ class Parser:
         Raises:
             ValueError: On malformed metadata, unknown keys, or invalid values.
         """
-        if "[" not in line or "]" not in line:
+        if "[" not in line and "]" not in line:
             return {}
 
-        if line.count("[") != 1 or line.count("]") != 1:
+        if (
+            line.count("[") != 1
+            or line.count("]") != 1
+            or line.index("[") > line.index("]")
+        ):
             raise ValueError(
-                "Malformed metadata (must be between '[' and ']')"
+                "Malformed metadata (must be one valid '[...]' block)"
             )
 
-        content = line[line.index("[") + 1 : line.index("]")].strip()
+        content = line[line.index("[") + 1: line.index("]")].strip()
         if not content:
             return {}
 
-        metadata = {}
+        metadata: dict[str, str] = {}
 
-        for item in content.split():
-            if "=" not in item:
-                raise ValueError(f"Malformed metadata: '{item}'")
+        tokens = content.split()
 
-            key, val = item.split("=", 1)
-            key, val = key.strip().lower(), val.strip()
+        for token in tokens:
+            if token.count("=") != 1:
+                raise ValueError(
+                    f"Malformed metadata (must be exactly one '='): '{token}'"
+                )
 
-            if key not in allow_keys:
-                raise ValueError(f"Unknown metadata: '{key}'")
+            key, val = token.split("=", 1)
+            key, val = key.strip(), val.strip()
+
+            if not key or not val:
+                raise ValueError(f"Empty key or value in metadata: '{token}'")
+
+            if allow_keys is not None and key not in allow_keys:
+                raise ValueError(f"Unknown or forbidden metadata key: '{key}'")
 
             if key in ("max_drones", "capacity", "max_link_capacity"):
                 if not val.isdigit() or int(val) < 1:
                     raise ValueError(
                         f"Invalid value for '{key}': '{val}' "
-                        f"(must be an integer greater than 1)"
+                        "(must be a positive integer >= 1)"
                     )
-                metadata[key] = val
+
+            if key == "color":
+                if not val.isalnum() and "_" not in val:
+                    raise ValueError(f"Invalid color format: '{val}'")
+
+            if key in metadata:
+                raise ValueError(f"Duplicate metadata key found: '{key}'")
+
+            metadata[key] = val
+
         return metadata
