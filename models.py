@@ -182,20 +182,21 @@ class Drone:
         """
         self.id: str = id_drone
         self.location: Hub | Connection = curr_loc
-        self.in_transit: bool = False
-        self.turn: int = 0
-        self.has_arrived: bool = False
+        # DEAD CODE: never read
+        # self.in_transit: bool = False
+        # self.turn: int = 0
+        # self.has_arrived: bool = False
 
-    def get_drone_info(self) -> None:
-        """Print detailed information about the drone's current state."""
-        print(f"Drone_id: {self.id}")
-        print(
-            f"Drone location: "
-            f"{self.location.name if self.location else 'None'}"
-            )
-        print(f"In transit: {self.in_transit}")
-        print(f"Turn number: {self.turn}")
-        print(f"Has arrived?: {self.has_arrived}")
+# //     def get_drone_info(self) -> None:
+# //         """Print detailed information about the drone's current state."""
+# //         print(f"Drone_id: {self.id}")
+# //         print(
+# //             f"Drone location: "
+# //             f"{self.location.name if self.location else 'None'}"
+# //             )
+# //         print(f"In transit: {self.in_transit}")
+# //         print(f"Turn number: {self.turn}")
+# //         print(f"Has arrived?: {self.has_arrived}")
 
 
 class DroneMap:
@@ -215,7 +216,8 @@ class DroneMap:
         self.connections: list[Connection] = []
         self.start_hub: Optional[Hub] = None
         self.end_hub: Optional[Hub] = None
-        self.used_coords: set = set()
+        # DEAD CODE: written but never read
+        # self.used_coords: set = set()
 
     def add_hub(self, hub: Hub) -> None:
         """Add a hub to the map after validating uniqueness.
@@ -238,7 +240,8 @@ class DroneMap:
             raise ValueError("Error: end_hub already exists.")
 
         self.hubs[hub.name] = hub
-        self.used_coords.add((hub.x, hub.y))
+        # DEAD CODE: written but never read
+        # self.used_coords.add((hub.x, hub.y))
 
         if hub.hub_type == "start":
             self.start_hub = hub
@@ -378,6 +381,7 @@ class Solver:
         self.history: list = []
         self._reservation_table = ReservationTable()
 
+        assert self.map.start_hub is not None, "start_hub must exist"
         self.drones: list[Drone] = [
             Drone(f"D{i}", self.map.start_hub)
             for i in range(1, drones_number + 1)
@@ -405,37 +409,20 @@ class Solver:
         """
         return sum(1 for d in self.drones if d.location == conn)
 
-    def can_move_hub(self, hub: Hub) -> bool:
-        """Check if a hub has available capacity.
+    # DEAD CODE: never called
+    # def can_move_hub(self, hub: Hub) -> bool:
+    #     """Check if a hub has available capacity."""
+    #     return self.get_drones_in_hub(hub) < hub.max_drones
 
-        Args:
-            hub: The hub to check.
+    # def can_move_conn(self, conn: Connection) -> bool:
+    #     """Check if a connection has available capacity."""
+    #     return self.get_drones_in_con(conn) < conn.capacity
 
-        Returns:
-            True if the hub can accept more drones.
-        """
-        return self.get_drones_in_hub(hub) < hub.max_drones
-
-    def can_move_conn(self, conn: Connection) -> bool:
-        """Check if a connection has available capacity.
-
-        Args:
-            conn: The connection to check.
-
-        Returns:
-            True if the connection can accept more drones.
-        """
-        return self.get_drones_in_con(conn) < conn.capacity
-
-    def get_move_costs(
-            self, from_hub: Hub, to_hub: Hub, conn: Connection
-            ) -> int:
+    def get_move_costs(self, to_hub: Hub) -> int:
         """Calculate the movement cost to enter a destination zone.
 
         Args:
-            from_hub: The originating hub (unused, kept for signature comp).
             to_hub: The destination hub.
-            conn: The connection being traversed (unused).
 
         Returns:
             The movement cost in turns based on zone type.
@@ -456,6 +443,8 @@ class Solver:
         self._reservation_table.clear()
         total_paths = []
 
+        assert self.map.start_hub is not None, "start_hub must exist"
+        assert self.map.end_hub is not None, "end_hub must exist"
         for drone in self.drones:
             path = self.find_path(self.map.start_hub, self.map.end_hub)
 
@@ -515,9 +504,7 @@ class Solver:
                 if len(path) > 1 and neighbor_hub.name == path[-2][0].name:
                     continue
 
-                step_cost = self.get_move_costs(
-                    curr_hub, neighbor_hub, connection
-                )
+                step_cost = self.get_move_costs(neighbor_hub)
                 if step_cost >= 999999:  # Blocked node
                     continue
 

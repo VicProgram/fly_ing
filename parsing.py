@@ -1,5 +1,5 @@
 import re
-from typing import Any, Tuple
+from typing import Any, Tuple  # TODO: Tuple only used by dead param signature
 from models import Connection, DroneMap, Hub, ValidList
 
 
@@ -66,6 +66,7 @@ class Parser:
         except OSError as e:
             raise ValueError(f"I/O error on '{map_path}': {e}")
 
+        # DEAD CODE: commented out exception handler
         # except FileNotFoundError:
         #     raise ValueError(
         #         f"Error: File '{map_path}' does not exist."
@@ -78,23 +79,9 @@ class Parser:
             raise ValueError("Error: map has no end_hub.")
 
     def parse_hub_content(
-        self, content: str, allow_keys: set = {"color", "zone", "max_drones"}
+        self, content: str
     ) -> Tuple[str, int, int, str, str, int]:
-        """Parse hub metadata and extract hub properties.
-
-        Extracts zone type, color, max_drones from bracket metadata,
-        then parses the name and coordinates from the remaining content.
-
-        Args:
-            content: The raw hub line content after the prefix.
-            allow_keys: Set of allowed metadata keys for this context.
-
-        Returns:
-            Tuple of (name, x, y, zone_type, color, max_drones).
-
-        Raises:
-            ValueError: On invalid format, coordinates, or zone type.
-        """
+        """Parse hub metadata and extract hub properties."""
         allow_keys = {"color", "zone", "max_drones"}
         meta = self.parse_metadata(content, allow_keys)
 

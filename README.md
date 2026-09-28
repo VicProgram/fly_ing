@@ -6,7 +6,7 @@
 
 Fly-in is a drone routing system that navigates multiple drones through a network of connected zones while minimizing simulation turns and handling movement constraints. The system uses a pathfinding algorithm (A* in time-space with a reservation table) to schedule drone movements, respecting zone capacities, connection capacities, and zone-specific movement costs.
 
-The project is written in Python 3.10+ and follows a fully object-oriented design. It includes a parser for the input file format, a simulation engine, a pathfinding algorithm, and a visual representation system.
+The project is written in Python 3.10+ and follows a fully object-oriented design. It includes a parser for the input file format, a simulation engine, and a pathfinding algorithm.
 
 ## Instructions
 
@@ -42,6 +42,32 @@ Or directly:
 python3 fly_ing.py maps/easy/01_linear_path.txt
 ```
 
+### Example
+
+**Input** (`maps/easy/01_linear_path.txt`):
+
+```
+nb_drones: 2
+start_hub: start 0 0
+end_hub: goal 3 0
+hub: waypoint1 1 0
+hub: waypoint2 2 0
+connection: start-waypoint1
+connection: waypoint1-waypoint2
+connection: waypoint2-goal
+```
+
+**Output**:
+
+```
+D1-waypoint1
+D1-waypoint2 D2-waypoint1
+D1-goal D2-waypoint2
+D2-goal
+```
+
+Each line represents one turn. Drones in flight show as `D<ID>-<from>-<to>`, arrived drones as `D<ID>-<zone>` (colored by zone). Stationary drones are omitted.
+
 ### Debug mode
 
 ```bash
@@ -73,14 +99,6 @@ make clean
 ```
 
 This removes the virtual environment, cache files, and temporary files.
-
-### Visual mode
-
-```bash
-python3 fly_ing.py maps/easy/01_linear_path.txt --visual
-```
-
-This displays an ASCII mini-map of the network with drone positions and zone colors on stderr, while stdout remains clean with only the movement lines.
 
 ## Resources
 
@@ -147,23 +165,6 @@ The algorithm uses **A* search in time-space** combined with a **reservation tab
 - **No backtracking**: Once a drone's path is reserved, it cannot be replanned. This can lead to suboptimal solutions in complex scenarios.
 - **Scalability**: For very large numbers of drones (1000+), the reservation table can become large, but the algorithm remains efficient due to the sparse nature of the reservations.
 
-## Visual Representation
-
-The visual representation system provides real-time feedback of the simulation through:
-
-- **ASCII mini-map**: A grid showing the network layout with zone coordinates.
-- **Zone colors**: Each hub is displayed with its specified color using ANSI escape codes.
-- **Drone positions**: The number of drones in each zone is shown as `name:count`.
-- **Delivered count**: The number of drones that have reached the end zone is displayed at the bottom.
-
-The visual output is sent to **stderr** to keep stdout clean for the movement lines. This allows the simulation to be piped or redirected while still providing visual feedback.
-
-### How it helps
-
-- **Understanding the simulation**: The mini-map makes it easy to see where drones are and how they move through the network.
-- **Debugging**: Visual feedback helps identify issues such as capacity violations or deadlocks.
-- **Demonstration**: The visual mode is useful for presenting the project during peer reviews.
-
 ## Project structure
 
 ```
@@ -171,7 +172,6 @@ fly_ing/
 ├── fly_ing.py          # Main entry point
 ├── models.py           # Core classes: DroneMap, Solver, ReservationTable, etc.
 ├── parsing.py          # Parser for the input file format
-├── visualizer.py       # Terminal-based visual representation
 ├── Makefile            # Build automation
 ├── requirements.txt    # Python dependencies
 ├── maps/               # Test maps
