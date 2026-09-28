@@ -444,7 +444,7 @@ class Solver:
             return 999999
         return ValidList.zone_costs.get(to_hub.zone_type, 1)
 
-    def run(self, visualizer: any = None) -> None:
+    def run(self) -> None:
         """Execute the full pathfinding and simulation output.
 
         Plans paths for all drones sequentially using A* in time-space,
@@ -465,8 +465,6 @@ class Solver:
 
             self.add_path(path)
             total_paths.append((drone, path))
-        if visualizer:
-            visualizer.display(total_paths)
         else:
             self.print_simulation_output(total_paths)
 
