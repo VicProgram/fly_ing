@@ -1,4 +1,3 @@
-import sys
 import re
 from typing import Any, Tuple
 from models import Connection, DroneMap, Hub, ValidList

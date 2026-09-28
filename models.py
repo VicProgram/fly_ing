@@ -43,30 +43,6 @@ class ValidList:
         "lime": "\033[38;5;118m",
         "gray": "\033[38;5;244m",
         "marron": "\033[38;5;88m",
-        "darked": "\033[38;5;52m"
-    }
-
-    ansi_colors = {
-        "green": "\033[32m",
-        "yellow": "\033[33m",
-        "red": "\033[31m",
-        "blue": "\033[34m",
-        "cyan": "\033[36m",
-        "magenta": "\033[35m",
-        "white": "\033[37m",
-        "purple": "\033[35;1m",
-        "orange": "\033[38;5;208m",
-        "brown": "\033[38;5;130m",
-        "maroon": "\033[38;5;88m",
-        "black": "\033[90m",
-        "gold": "\033[33;1m",
-        "violet": "\033[35;1m",
-        "crimson": "\033[31;1m",
-        "darkred": "\033[31m",
-        "rainbow": "\033[36;1m",
-        "lime": "\033[38;5;118m",
-        "gray": "\033[38;5;244m",
-        "marron": "\033[38;5;88m",
         "darked": "\033[38;5;52m",
         "RESET": "\033[0m"
     }
@@ -468,7 +444,7 @@ class Solver:
             return 999999
         return ValidList.zone_costs.get(to_hub.zone_type, 1)
 
-    def run(self) -> None:
+    def run(self, visualizer: any = None) -> None:
         """Execute the full pathfinding and simulation output.
 
         Plans paths for all drones sequentially using A* in time-space,
@@ -489,8 +465,10 @@ class Solver:
 
             self.add_path(path)
             total_paths.append((drone, path))
-
-        self.print_simulation_output(total_paths)
+        if visualizer:
+            visualizer.display(total_paths)
+        else:
+            self.print_simulation_output(total_paths)
 
     def find_path(self, start: Hub, end: Hub, start_turn: int = 0
                   ) -> Optional[List[tuple[Hub, int]]]:
@@ -637,29 +615,6 @@ class Solver:
                                 self._reservation_table.reserve_link(conn, t)
                             break
 
-            # region
-            # # Reserve hub
-            # if hub.hub_type not in ("start", "end"):
-            #     if i > 0 and path[i - 1][0].name == hub.name:
-            #         prev_turn = path[i - 1][1]
-            #         for t in range(prev_turn + 1, turn + 1):
-            #             self._reservation_table.reserve_hub(hub.name, t)
-            #     else:
-            #         self._reservation_table.reserve_hub(hub.name, turn)
-
-            # # Reserve connection
-            # if i > 0:
-            #     prev_hub, prev_turn = path[i - 1]
-
-            #     if prev_hub.name != hub.name:
-            #         curr_pair = frozenset({prev_hub.name, hub.name})
-
-            #         for conn in self.map.connections:
-            #             if conn._key() == curr_pair:
-            #                 for t in range(prev_turn, turn):
-            #                     break
-            # endregion
-
     def print_simulation_output(
             self, total_paths: list[tuple[Drone, list[tuple[Hub, int]]]]
             ) -> None:
@@ -690,9 +645,14 @@ class Solver:
                             f"{drone.id}-{prev_hub.name}-{curr_hub.name}"
                         )
 
+                    meta_color = ValidList.valid_colors.get(
+                        curr_hub.color, "\033[37m"
+                        )
                     if curr_turn not in turn_moves:
                         turn_moves[curr_turn] = []
-                    turn_moves[curr_turn].append(f"{drone.id}-{curr_hub.name}")
+                    turn_moves[curr_turn].append(
+                        f"{meta_color}{drone.id}-{curr_hub.name}\033[0m"
+                        )
 
                 # Drone waits
 

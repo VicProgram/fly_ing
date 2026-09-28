@@ -107,7 +107,7 @@ if line_stripped.startswith("nb_drones:"):
 
 --- -->
 
-## FASE 3 — Formato de salida (puntos 10, 11, 37)
+<!-- ## FASE 3 — Formato de salida (puntos 10, 11, 37)
 
 **Archivo:** `models.py`
 
@@ -130,11 +130,11 @@ if line_stripped.startswith("nb_drones:"):
 **Pasos:**
 1. Asegurar que `print_simulation_output` solo use `print()` para las líneas de movimiento
 2. Cualquier otra info (métricas, debug) → `sys.stderr.write()`
-3. Verificar que no queden cabeceras "Turno NI:" ni "(Sin movimientos)"
+3. Verificar que no queden cabeceras "Turno NI:" ni "(Sin movimientos)" -->
 
-**Verificación:**
+<!-- **Verificación:**
 - `python3 fly_ing.py mapa.txt | wc -l` = número exacto de turnos
-- No hay nada más en stdout
+- No hay nada más en stdout -->
 
 ### Punto 37 — Borrar código comentado
 

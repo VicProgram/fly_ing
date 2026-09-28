@@ -1,5 +1,5 @@
 import sys
-from models import ansi_colors
+from models import ValidList
 
 
 class TerminalVisualizer:
@@ -34,7 +34,9 @@ class TerminalVisualizer:
         else:
             self.min_x = self.max_x = self.min_y = self.max_y = 0
 
-    def render_turn(self, turn: int, drone_positions: dict, total_drones: int, delivered: int) -> None:
+    def render_turn(
+            self, turn: int, drone_positions: dict, total_drones: int, delivered: int
+            ) -> None:
         """Render a single turn's state to stderr.
 
         Draws the mini-map grid with hub colors and drone counts,
@@ -57,12 +59,12 @@ class TerminalVisualizer:
             gx = hub.x - self.min_x
             gy = hub.y - self.min_y
 
-            color_code = ansi_colors.get(getattr(hub, "color", "white").lower(), ansi_colors["RESET"])
+            color_code = ValidList.valid_colors.get(getattr(hub, "color", "white").lower(), ValidList.valid_colors["RESET"])
 
             drones_here = drone_positions.get(hub.name, 0)
             label = f"{hub.name[:2]}:{drones_here}" if drones_here > 0 else f"{hub.name[:3]}"
 
-            grid[gy][gx] = f"{color_code}[{label:^3}]{ansi_colors['RESET']}"
+            grid[gy][gx] = f"{color_code}[{label:^3}]{valid_colors['RESET']}"
 
         for row in reversed(grid):
             sys.stderr.write(" ".join(row) + "\n")
@@ -90,7 +92,7 @@ def main() -> None:
     parser = Parser(drone_map)
     parser.parse_file(map_path)
 
-    visualizer = TerminalVisualizer(drone_map) if is_visual else None
+    # visualizer = TerminalVisualizer(drone_map) if is_visual else None
 
     solver = Solver(drone_map, parser.nb_drones)
 
