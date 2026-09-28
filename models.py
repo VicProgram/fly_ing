@@ -69,7 +69,7 @@ class Hub:
         x: X-coordinate on the map grid.
         y: Y-coordinate on the map grid.
         zone_type: Zone type (normal, blocked, restricted, priority).
-        color: Optional color name for visual representation.
+        color: Optional color name for terminal display.
         hub_type: Hub role (start, end, or normal).
         max_drones: Maximum simultaneous drone occupancy.
     """
