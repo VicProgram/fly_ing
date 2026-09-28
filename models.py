@@ -639,8 +639,7 @@ class Solver:
                     for conn in self.map.connections:
                         if conn._key() == curr_pair:
                             for t in range(prev_turn, turn):
-                                self._reservation_table.reserve_link(conn, t)
-                            break
+                                break
 
     def print_simulation_output(
             self, total_paths: list[tuple[Drone, list[tuple[Hub, int]]]]
