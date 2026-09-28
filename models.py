@@ -622,14 +622,15 @@ class Solver:
 
             # Reserve hub
             if hub.hub_type not in ("start", "end"):
-                if i > 0 and path[i - 1][0].name == hub.name:
-                    prev_turn = path[i - 1][1]
+                if i > 0:
+                    prev_hub, prev_turn = path[i - 1]
                     for t in range(prev_turn + 1, turn + 1):
                         self._reservation_table.reserve_hub(hub.name, t)
                 else:
                     self._reservation_table.reserve_hub(hub.name, turn)
 
             # Reserve connection
+
             if i > 0:
                 prev_hub, prev_turn = path[i - 1]
 
@@ -639,7 +640,31 @@ class Solver:
                     for conn in self.map.connections:
                         if conn._key() == curr_pair:
                             for t in range(prev_turn, turn):
-                                break
+                                self._reservation_table.reserve_link(conn, t)
+                            break
+
+            # region
+            # # Reserve hub
+            # if hub.hub_type not in ("start", "end"):
+            #     if i > 0 and path[i - 1][0].name == hub.name:
+            #         prev_turn = path[i - 1][1]
+            #         for t in range(prev_turn + 1, turn + 1):
+            #             self._reservation_table.reserve_hub(hub.name, t)
+            #     else:
+            #         self._reservation_table.reserve_hub(hub.name, turn)
+
+            # # Reserve connection
+            # if i > 0:
+            #     prev_hub, prev_turn = path[i - 1]
+
+            #     if prev_hub.name != hub.name:
+            #         curr_pair = frozenset({prev_hub.name, hub.name})
+
+            #         for conn in self.map.connections:
+            #             if conn._key() == curr_pair:
+            #                 for t in range(prev_turn, turn):
+            #                     break
+            # endregion
 
     def print_simulation_output(
             self, total_paths: list[tuple[Drone, list[tuple[Hub, int]]]]
