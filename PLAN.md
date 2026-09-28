@@ -144,28 +144,6 @@ if line_stripped.startswith("nb_drones:"):
 
 ---
 
-## FASE 4 — Visual (punto 20)
-
-**Archivo:** `fly_ing.py` y `visualizer.py`
-
-**Pasos:**
-1. En `fly_ing.py`, importar `TerminalVisualizer`:
-   ```python
-   from visualizer import TerminalVisualizer
-   ```
-2. Añadir flag `--visual` en `main()`:
-   ```python
-   is_visual = "--visual" in sys.argv
-   ```
-3. Crear el visualizer si el flag está activo
-4. En `print_simulation_output`, llamar a `visualizer.render_turn()` por cada turno
-5. Asegurar que la salida visual vaya por `sys.stderr` (no ensucia stdout)
-
-**Verificación:**
-- `python3 fly_ing.py mapa.txt --visual` muestra el mini-mapa
-- `python3 fly_ing.py mapa.txt` (sin flag) no muestra visual
-- El stdout sigue siendo solo líneas de movimiento
-
 ---
 
 ## FASE 5 — Calidad de código (puntos 23, 24, 25)

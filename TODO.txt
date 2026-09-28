@@ -65,11 +65,9 @@ BLOQUEANTES (incumplen el subject)
       Efectos: `Alpha` y `alpha` dan "hub duplicado" (falso error) y la
       salida imprime nombres distintos a los del mapa (`Start` -> `start`).
 
-- [ ] 20. [BLOQUEANTE] Visual representation (subject VII.1: "must provide
-      visual feedback"). visualizer.py existe y compila, pero nadie lo importa
-      ni lo usa. fly_ing.py no tiene flag --visual. Recomendación: visual
-      por terminal (ANSI + mini-mapa ASCII) que conviva con el formato
-      exacto del punto 10 (flag `--visual` o salida por stderr).
+- [x] 20. [RESUELTO] Visual representation: se mantiene output con colores
+      ANSI por zona en el terminal. Se eliminó visualizer.py y todas las
+      referencias al flag `--visual`.
 
 - [ ] 23. [BLOQUEANTE] mypy: quedan 6 errores (subject III.1: "All
       functions must pass mypy without errors"):
