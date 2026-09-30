@@ -1,5 +1,5 @@
 import re
-from typing import Any, Tuple  # TODO: Tuple only used by dead param signature
+from typing import Tuple
 from models import Connection, DroneMap, Hub, ValidList
 
 
@@ -65,12 +65,6 @@ class Parser:
 
         except OSError as e:
             raise ValueError(f"I/O error on '{map_path}': {e}")
-
-        # DEAD CODE: commented out exception handler
-        # except FileNotFoundError:
-        #     raise ValueError(
-        #         f"Error: File '{map_path}' does not exist."
-        #     )
 
         if self.map.start_hub is None:
             raise ValueError("Error: map has no start_hub.")
@@ -156,27 +150,41 @@ class Parser:
                 content
             )
 
-            new_hub: Any = None
-            match prefix:
-                case "start_hub":
-                    new_hub = Hub(
-                        name, x, y, zone_type, color, "start", max_drones
-                    )
-                    self.hub_counter += 1
-                case "end_hub":
-                    new_hub = Hub(
-                        name, x, y, zone_type, color, "end", max_drones
-                    )
-                    self.hub_counter += 1
-                case "hub":
-                    new_hub = Hub(
-                        name, x, y, zone_type, color, "normal", max_drones
-                    )
-                    self.hub_counter += 1
-                case _:
-                    raise ValueError(f"Unknown hub prefix: '{prefix}'")
+            # region
+            # new_hub: Any = None
+            # match prefix:
+            #     case "start_hub":
+            #         new_hub = Hub(
+            #             name, x, y, zone_type, color, "start", max_drones
+            #         )
+            #         self.hub_counter += 1
+            #     case "end_hub":
+            #         new_hub = Hub(
+            #             name, x, y, zone_type, color, "end", max_drones
+            #         )
+            #         self.hub_counter += 1
+            #     case "hub":
+            #         new_hub = Hub(
+            #             name, x, y, zone_type, color, "normal", max_drones
+            #         )
+            #         self.hub_counter += 1
+            #     case _:
+            #         raise ValueError(f"Unknown hub prefix: '{prefix}'")
 
-            self.map.add_hub(new_hub)
+            # self.map.add_hub(new_hub)
+            # endregion
+
+            hub_type = {
+                "start_hub": "start", "end_hub": "end", "hub": "normal"
+                }.get(prefix)
+
+            if hub_type is None:
+                raise ValueError(f"Unknown hub prefix: '{prefix}'")
+
+            self.hub_counter += 1
+            self.map.add_hub(Hub(
+                name, x, y, zone_type, color, hub_type, max_drones
+            ))
 
         elif line_stripped.startswith("connection:"):
             try:

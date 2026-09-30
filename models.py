@@ -182,21 +182,6 @@ class Drone:
         """
         self.id: str = id_drone
         self.location: Hub | Connection = curr_loc
-        # DEAD CODE: never read
-        # self.in_transit: bool = False
-        # self.turn: int = 0
-        # self.has_arrived: bool = False
-
-# //     def get_drone_info(self) -> None:
-# //         """Print detailed information about the drone's current state."""
-# //         print(f"Drone_id: {self.id}")
-# //         print(
-# //             f"Drone location: "
-# //             f"{self.location.name if self.location else 'None'}"
-# //             )
-# //         print(f"In transit: {self.in_transit}")
-# //         print(f"Turn number: {self.turn}")
-# //         print(f"Has arrived?: {self.has_arrived}")
 
 
 class DroneMap:
@@ -216,8 +201,7 @@ class DroneMap:
         self.connections: list[Connection] = []
         self.start_hub: Optional[Hub] = None
         self.end_hub: Optional[Hub] = None
-        # DEAD CODE: written but never read
-        # self.used_coords: set = set()
+
 
     def add_hub(self, hub: Hub) -> None:
         """Add a hub to the map after validating uniqueness.
@@ -240,8 +224,6 @@ class DroneMap:
             raise ValueError("Error: end_hub already exists.")
 
         self.hubs[hub.name] = hub
-        # DEAD CODE: written but never read
-        # self.used_coords.add((hub.x, hub.y))
 
         if hub.hub_type == "start":
             self.start_hub = hub
@@ -408,15 +390,6 @@ class Solver:
             Number of drones traversing the connection.
         """
         return sum(1 for d in self.drones if d.location == conn)
-
-    # DEAD CODE: never called
-    # def can_move_hub(self, hub: Hub) -> bool:
-    #     """Check if a hub has available capacity."""
-    #     return self.get_drones_in_hub(hub) < hub.max_drones
-
-    # def can_move_conn(self, conn: Connection) -> bool:
-    #     """Check if a connection has available capacity."""
-    #     return self.get_drones_in_con(conn) < conn.capacity
 
     def get_move_costs(self, to_hub: Hub) -> int:
         """Calculate the movement cost to enter a destination zone.

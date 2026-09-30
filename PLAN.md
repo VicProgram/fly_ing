@@ -136,15 +136,15 @@ if line_stripped.startswith("nb_drones:"):
 - `python3 fly_ing.py mapa.txt | wc -l` = número exacto de turnos
 - No hay nada más en stdout -->
 
-### Punto 37 — Borrar código comentado
+<!-- ### Punto 37 — Borrar código comentado
 
 **Pasos:**
 1. En `fly_ing.py`, borrar líneas comentadas de pruebas
 2. Asegurar que no queden llamadas a `print_avances()`
 
----
+--- -->
 
----
+<!-- ---
 
 ## FASE 5 — Calidad de código (puntos 23, 24, 25)
 
@@ -177,8 +177,8 @@ if line_stripped.startswith("nb_drones:"):
        Raises:
            ValueError: cuándo.
        """
-   ```
-
+   ``` -->
+<!-- 
 ### Punto 25 — Código muerto
 
 **Pasos:**
@@ -207,9 +207,9 @@ if line_stripped.startswith("nb_drones:"):
 - Todas las secciones presentes
 - En inglés
 
----
+--- -->
 
-## FASE 7 — Menores (opcional)
+<!-- ## FASE 7 — Menores (opcional)
 
 | Punto | Descripción | Tiempo |
 |-------|-------------|--------|
@@ -227,25 +227,6 @@ if line_stripped.startswith("nb_drones:"):
 
 ---
 
-## ORDEN RECOMENDADO DE TRABAJO
-
-```
-Día 1:
-  Mañana:  Fase 1 (puntos 16, 13b, 12, 14+38) — 1 hora
-  Tarde:   Fase 2 (punto 5) — 1-2 horas
-
-Día 2:
-  Mañana:  Fase 3 (puntos 11, 10, 37) — 1 hora
-  Tarde:   Fase 4 (punto 20) — 1 hora
-
-Día 3:
-  Mañana:  Fase 5 (puntos 23, 24, 25) — 2 horas
-  Tarde:   Fase 6 (punto 27) — 1 hora
-  Extra:   Fase 7 (menores) — 1 hora
-```
-
----
-
 ## VERIFICACIÓN FINAL
 
 Antes de dar por terminado:
@@ -254,7 +235,6 @@ Antes de dar por terminado:
 make lint                    # 0 errores
 make run                     # funciona
 make run MAP=maps/hard/02    # funciona
-python3 fly_ing.py maps/easy/01.txt --visual  # visual OK
 ```
 
 Los 10 mapas deben dar los mismos turnos que antes:
@@ -263,4 +243,4 @@ easy/01 4    easy/02 4    easy/03 4
 medium/01 8  medium/02 15  medium/03 7
 hard/01 13   hard/02 16   hard/03 26
 challenger 43
-```
+``` -->

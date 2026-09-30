@@ -6,7 +6,7 @@ Leyenda:  [OK] hecho y verificado   [ ] pendiente   [!] fallo encontrado
 BLOQUEANTES (incumplen el subject)
 ===========================================================================
 
-- [ ] 5. [!] [BLOQUEANTE] Se sobrepasa max_link_capacity con zonas restricted.
+- [OK] 5. [!] [BLOQUEANTE] Se sobrepasa max_link_capacity con zonas restricted.
       find_path comprueba la conexión en range(curr_turn, next_turn)
       (models.py:299-304), pero reservas posteriores (esperas y otras rutas)
       pueden pisarla sin esa comprobación. Reproductor determinista:
@@ -47,7 +47,7 @@ BLOQUEANTES (incumplen el subject)
         max_link_capacity=-3 / =abc     -> error ✅
         [foo=bar]  (clave desconocida)  -> error ✅
 
-- [ ] 13. [!] [BLOQUEANTE] nb_drones (parsing.py:95-103). Subject VII.4:
+- [OK] 13. [!] [BLOQUEANTE] nb_drones (parsing.py:95-103). Subject VII.4:
       "The program must be able to handle any number of drones".
       a) el tope `>= 500` YA fue quitado (confirmado 27/09). ✅
       b) un segundo `nb_drones:` más abajo se acepta y SOBRESCRIBE
