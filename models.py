@@ -202,7 +202,6 @@ class DroneMap:
         self.start_hub: Optional[Hub] = None
         self.end_hub: Optional[Hub] = None
 
-
     def add_hub(self, hub: Hub) -> None:
         """Add a hub to the map after validating uniqueness.
 
